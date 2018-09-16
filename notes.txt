@@ -1,0 +1,43 @@
+## Notes
+#!/bin/bash
+
+# Login
+ssh edoster@colostate.edu@login.rc.colorado.edu
+
+#To access Summit compile nodes:
+ssh scompile
+#The Summit compile nodes are intended ONLY for compiling, building,
+#and submitting software applications to run on Summit. DO NOT run any
+#computational applications directly on this node!
+
+# Written by:	 Enrique Doster and Steven Lakin
+# Date:		     13 February 2018
+# Purpose: 	   This script submits the nextflow assembly script to the Slurm job scheduler
+
+# purge all existing modules
+module purge
+
+# load required modules
+module load jdk/1.8.0
+module load singularity/2.5.2
+module load gnu_parallel/20160622
+module load gcc/6.1.0
+module load openmpi/2.0.1
+# The directory where you want the job to run
+cd /projects/$USER/meg-assembly/summit-assembly
+curl -s https://get.nextflow.io | bash
+git clone https://github.com/lakinsm/summit-assembly.git
+
+## Start assembly
+parallel -j 1 "/scratch/summit/edoster@colostate.edu/MEG-summit-assembly/parallel_assembly.bash {}" ::: /scratch/summit/edoster@colostate.edu/proj6/*R1.fastq.gz
+
+## Start the sbatch scripts using the SLURM_task_launcher.sh
+
+squeue -u edoster\@colostate.edu
+
+squeue -u edoster\@colostate.edu -t RUNNING
+
+squeue -u edoster\@colostate.edu -t PENDING
+
+#To cancel all the jobs for a user:
+scancel -u edoster\@colostate.edu

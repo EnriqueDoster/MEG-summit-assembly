@@ -58,12 +58,12 @@ if __name__ == "__main__":
         mod_mpi = 'module load openmpi/2.0.1'
 
         #execute mod_singularity
-        #exec_singularity = 'srun singularity run /projects/edoster@colostate.edu/meg-assembly/summit-assembly/lakinsm-summit-assembly-latest.img'
+        #exec_singularity = 'srun singularity run /scratch/summit/edoster@colostate.edu/EnriqueDoster-MEG-summit-assembly-master-latest.simg'
         # Change to output directory
         cd_out_dir= ('cd {}'.format(args.output))
         fout.write('{}\n{}\n{}\n{}\n{}\n{}\n'.format(purge_mod,mod_jkd,mod_singularity,mod_gcc, mod_mpi, cd_out_dir)) # Write out all necessary information for slurm at top of script
             ## QC control
-        trimm = ('singularity exec /projects/edoster@colostate.edu/meg-assembly/summit-assembly/lakinsm-summit-assembly-latest.img /usr/lib/jvm/java-7-openjdk-amd64/bin/java -jar {}/trimmomatic-0.36.jar \
+        trimm = ('singularity exec /scratch/summit/edoster@colostate.edu/EnriqueDoster-MEG-summit-assembly-master-latest.simg /usr/lib/jvm/java-7-openjdk-amd64/bin/java -jar {}/trimmomatic-0.36.jar \
                     PE \
                 -threads {} \
                 {} {} -baseout {} \
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         fout.write('{}\n{}\n'.format(trimm,clean_up_trimm))
         ## Assembly commands
         mk_temp_idba = ('mkdir -p temp{}/idba'.format(samplename))
-        merge_fq = ('singularity exec /projects/edoster@colostate.edu/meg-assembly/summit-assembly/lakinsm-summit-assembly-latest.img /usr/local/bin/fq2fa --merge --filter <( zcat {}.1P.fastq.gz ) <( zcat {}.2P.fastq.gz ) temp{}/interleavened.fasta'.format(samplename,samplename,samplename))
-        assemble_fa = ('singularity exec /projects/edoster@colostate.edu/meg-assembly/summit-assembly/lakinsm-summit-assembly-latest.img /usr/local/bin/idba_ud --num_threads {} -r temp{}/interleavened.fasta -o temp{}/idba'.format(threads,samplename,samplename))
+        merge_fq = ('singularity exec /scratch/summit/edoster@colostate.edu/EnriqueDoster-MEG-summit-assembly-master-latest.simg /usr/local/bin/fq2fa --merge --filter <( zcat {}.1P.fastq.gz ) <( zcat {}.2P.fastq.gz ) temp{}/interleavened.fasta'.format(samplename,samplename,samplename))
+        assemble_fa = ('singularity exec /scratch/summit/edoster@colostate.edu/EnriqueDoster-MEG-summit-assembly-master-latest.simg /usr/local/bin/idba_ud --num_threads {} -r temp{}/interleavened.fasta -o temp{}/idba'.format(threads,samplename,samplename))
         rename_contig = ('cp temp{}/idba/contig.fa {}.contigs.fasta'.format(samplename,samplename))
         fout.write('{}\n{}\n{}\n{}\n'.format(mk_temp_idba,merge_fq,assemble_fa,rename_contig))

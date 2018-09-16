@@ -83,6 +83,6 @@ if __name__ == "__main__":
         ## Assembly commands
         mk_temp_idba = ('mkdir -p temp{}/idba'.format(samplename))
         merge_fq = ('singularity exec /projects/edoster@colostate.edu/meg-assembly/summit-assembly/lakinsm-summit-assembly-latest.img /usr/local/bin/fq2fa --merge --filter <( zcat {}.1P.fastq.gz ) <( zcat {}.2P.fastq.gz ) temp{}/interleavened.fasta'.format(samplename,samplename,samplename))
-        assemble_fa = ('singularity exec /projects/edoster@colostate.edu/meg-assembly/summit-assembly/lakinsm-summit-assembly-latest.img /usr/local/bin/idba_ud --num_threads {} -l temp{}/interleavened.fasta -o temp{}/idba'.format(threads,samplename,samplename))
+        assemble_fa = ('singularity exec /projects/edoster@colostate.edu/meg-assembly/summit-assembly/lakinsm-summit-assembly-latest.img /usr/local/bin/idba_ud --num_threads {} -r temp{}/interleavened.fasta -o temp{}/idba'.format(threads,samplename,samplename))
         rename_contig = ('cp temp{}/idba/contig.fa {}.contigs.fasta'.format(samplename,samplename))
         fout.write('{}\n{}\n{}\n{}\n'.format(mk_temp_idba,merge_fq,assemble_fa,rename_contig))

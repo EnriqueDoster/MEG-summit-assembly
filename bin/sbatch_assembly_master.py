@@ -7,9 +7,6 @@ import sys
 import gzip
 import io
 
-
-## Input = 2 samples
-
 #USAGE : python sbatch_assembly_master.py -f ~/Dropbox/Reference_resources/Useful_code/Python/test_R1.gz -r ~/Dropbox/Reference_resources/Useful_code/Python/test_R2.gz -o test/
 
 parser = argparse.ArgumentParser()
@@ -23,13 +20,13 @@ parser.add_argument('-o', '--output', required=True,
 
 ## Other parameters
 TRIMMOMATIC = '/opt/Trimmomatic-0.36'
-adapters = "containers/data/adapters/nextera.fa"
-fqc_adapters = "containers/data/adapters/nextera.tab"
-leading = '3'
+adapters = "../containers/data/adapters/nextera.fa"
+fqc_adapters = "../containers/data/adapters/nextera.tab"
+leading = '10' ## To remove UMI's
 trailing = '3'
 slidingwindow = "4:15"
 minlen = '36'
-threads= '20'
+threads= '11'
 
 
 
@@ -44,19 +41,20 @@ if __name__ == "__main__":
     with open(args.output + '/' + samplename + '_SLURM_script.sh', 'w') as fout:
         ## First, write the SBATCH information
         shebang = '#!/bin/bash'
-        line2 = '#SBATCH --job-name=launcher%j\
-        #SBATCH --partition=shas\
-        #SBATCH --mem-per-cpu=100GB'
+        line2 = '#SBATCH --job-name=launcher%j \n \
+        #SBATCH --partition=shas \n \
+        #SBATCH --mem=200GB \n \
+        #SBATCH --ntasks=1 \n \
+        #SBATCH --cpus-per-task=11'
         line3 = '#SBATCH --output=assembly_log%j'
         line4 = '#SBATCH --time=10:00:00'
-        fout.write('{}\n{}_{}\n{}\n{}\n'.format(shebang,line2,samplename,line3,line4)) # Write out all necessary information for slurm at top of script
+        fout.write('{}\n{}\n{}\n{}\n'.format(shebang,line2,line3,line4)) # Write out all necessary information for slurm at top of script
         # Load modules
         purge_mod = 'module purge'
         mod_jkd = 'module load jdk/1.8.0'
         mod_singularity = 'module load singularity/2.5.2'
         mod_gcc = 'module load gcc/6.1.0'
         mod_mpi = 'module load openmpi/2.0.1'
-
         #execute mod_singularity
         #exec_singularity = 'srun singularity run /scratch/summit/edoster@colostate.edu/EnriqueDoster-MEG-summit-assembly-master-latest.simg'
         # Change to output directory
@@ -64,16 +62,16 @@ if __name__ == "__main__":
         fout.write('{}\n{}\n{}\n{}\n{}\n{}\n'.format(purge_mod,mod_jkd,mod_singularity,mod_gcc, mod_mpi, cd_out_dir)) # Write out all necessary information for slurm at top of script
             ## QC control
         trimm = ('singularity exec /scratch/summit/edoster@colostate.edu/EnriqueDoster-MEG-summit-assembly-master-latest.simg /usr/lib/jvm/java-7-openjdk-amd64/bin/java -jar {}/trimmomatic-0.36.jar \
-                    PE \
-                -threads {} \
+                PE \
                 {} {} -baseout {} \
+                -threads {} \
                 ILLUMINACLIP:{}:2:30:10:3:TRUE \
                 LEADING:{} \
                 TRAILING:{} \
                 SLIDINGWINDOW:{} \
                 MINLEN:{} \
-                2> {}.trimmomatic.stats.log'.format(TRIMMOMATIC,threads,args.forward,args.reverse,samplename,adapters,leading,trailing,slidingwindow,minlen,samplename))
-        clean_up_trimm = ('gzip < {}_1P > {}.1P.fastq.gz \n \
+                2> {}.trimmomatic.stats.log'.format(TRIMMOMATIC,args.forward,args.reverse,samplename,threads,adapters,leading,trailing,slidingwindow,minlen,samplename))
+        clean_up_trimm = ('gzip -c {}_1P > {}.1P.fastq.gz \n \
             gzip -c {}_2P > {}.2P.fastq.gz \n \
             rm {}_1P \n \
             rm {}_2P \n \

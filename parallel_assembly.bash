@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Run the script from the location of the sam files and script must be in a different directory
-# Use: parallel -j 1 "../parallel_assembly.bash {}" ::: ~/Dropbox/Reference_resources/Useful_code/Python/*R1.fastq.gz
+# Run this script to make the various SBATCH files needed for al your samples
+# Use: parallel -j 1 "../parallel_assembly.bash {}" ::: input_dir/*R1.fastq.gz
 out_directory="assembly"
+input_dir
 
-samplename=$( basename $1 | sed -r 's/R1.fastq.gz//' )
+samplename=$( basename $1 | sed -r 's/R1_001.fastq.gz//' )
+input_dir=$(dirname $1)
 
 echo "${samplename}"
 
-python sbatch_assembly_master.py -f ${samplename}R1.fastq.gz -r ${samplename}R2.fastq.gz -o ${out_directory}
+python bin/sbatch_assembly_master.py -f ${input_dir}${samplename}R1_001.fastq.gz -r ${input_dir}${samplename}R2_001.fastq.gz -o ${out_directory}

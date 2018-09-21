@@ -5,17 +5,12 @@ From: debian:jessie-slim
 %post
     apt update \
     && apt install -y --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    git \
-    gcc \
-    make \
-    automake \
-    autoconf \
-    openjdk-7-jre \
-    wget \
-    unzip \
-    sed \
+    build-essential ca-certificates \
+    git make automake autoconf openjdk-7-jre wget unzip sed \
+    python3-pip python3-docopt python3-pytest \
+    libcurl4-openssl-dev libssl-dev zlib1g-dev fonts-texgyre \
+    gcc g++ gfortran libblas-dev liblapack-dev \
+    r-base-core r-recommended dos2unix\
     && rm -rf /var/lib/apt/lists/*
     cd /opt
     git clone https://github.com/loneknightpy/idba \
@@ -33,10 +28,13 @@ From: debian:jessie-slim
     unzip /opt/trimmomatic.zip -d /opt/ && \
     rm /opt/trimmomatic.zip
     cd /
-    
 
+    pip install biopython
 
-
+    # Based on rocker.
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen \
+      && locale-gen en_US.utf8 \
+      && /usr/sbin/update-locale LANG=en_US.UTF-8
 
 %environments
 LANG=en_US.UTF-8
@@ -44,10 +42,12 @@ LANGUAGE=en_US:en
 LC_ALL=en_US.UTF-8
 export LANG LANGUAGE LC_ALL
 
+%runscript
+/usr/bin/python "$@"
+
 
 %test
     which idba_ud
 
-%runscript
-python "$@"
+
 

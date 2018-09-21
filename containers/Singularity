@@ -55,9 +55,36 @@ From: debian:jessie-slim
 
     apt-get clean
     rm -rf /var/lib/apt/lists/
+    # Based on https://github.com/stan-dev/rstan/wiki/Installing-RStan-on-Mac-or-Linux
+    mkdir -p $HOME/.R
+    cat >$HOME/.R/Makevars <<EOF
+    CXXFLAGS=-O3 -mtune=native -march=native -Wno-unused-variable -Wno-unused-function  -Wno-macro-redefined
+    CXXFLAGS+=-flto -Wno-unused-local-typedefs
+    CXXFLAGS += -Wno-ignored-attributes -Wno-deprecated-declarations
+    EOF
+
+    # Based on rocker.
+    echo 'options(repos = c(CRAN = "https://cloud.r-project.org/"), download.file.method = "libcurl")' >>/etc/R/Rprofile.site
+    echo 'source("/etc/R/Rprofile.site")' >>/etc/littler.r
+    ln -s /usr/share/doc/littler/examples/install.r /usr/local/bin/install.r
+    ln -s /usr/share/doc/littler/examples/install2.r /usr/local/bin/install2.r
+
+    install.r docopt
+    install2.r --error \
+        devtools hexbin testthat knitr rmarkdown ggplot2 \
+        forcats lubridate readr tidyr directlabels rstan bayesplot
 
 
-    
+%environments
+LANG=en_US.UTF-8
+LANGUAGE=en_US:en
+LC_ALL=en_US.UTF-8
+export LANG LANGUAGE LC_ALL
+
+
 %test
     which idba_ud
+
+%runscript
+python "$@"
 

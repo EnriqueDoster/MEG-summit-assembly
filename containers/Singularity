@@ -33,6 +33,29 @@ From: debian:jessie-slim
     unzip /opt/trimmomatic.zip -d /opt/ && \
     rm /opt/trimmomatic.zip
     cd /
+    
+    # Code for python download
+    apt-get -y update
+    apt-get -y install eatmydata
+
+    eatmydata apt-get install -y locales
+
+    # Based on rocker.
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen \
+      && locale-gen en_US.utf8 \
+      && /usr/sbin/update-locale LANG=en_US.UTF-8
+
+    eatmydata apt-get install -y --no-install-recommends \
+      libcurl4-openssl-dev libssl-dev zlib1g-dev fonts-texgyre \
+      gcc g++ gfortran libblas-dev liblapack-dev \
+      make git git-annex-standalone pandoc \
+      python3-docopt python3-pytest \
+      r-base-core r-recommended r-cran-littler \
+      dos2unix snakemake
+
+    apt-get clean
+    rm -rf /var/lib/apt/lists/
+
 
     
 %test

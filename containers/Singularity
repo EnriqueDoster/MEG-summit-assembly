@@ -28,13 +28,7 @@ From: debian:jessie-slim
     unzip /opt/trimmomatic.zip -d /opt/ && \
     rm /opt/trimmomatic.zip
     cd /
-
-    pip install biopython
-
-    # Based on rocker.
-    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen \
-      && locale-gen en_US.utf8 \
-      && /usr/sbin/update-locale LANG=en_US.UTF-8
+    python3 -m pip install biopython
 
 %environments
 LANG=en_US.UTF-8
@@ -42,12 +36,11 @@ LANGUAGE=en_US:en
 LC_ALL=en_US.UTF-8
 export LANG LANGUAGE LC_ALL
 
-%runscript
-/usr/bin/python "$@"
-
-
 %test
     which idba_ud
+
+%runscript
+/usr/bin/python3 "$@"
 
 
 

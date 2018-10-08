@@ -1,11 +1,11 @@
-# MEG-summig-assembly
+# MEG-summit-assembly
 ### Written by:	 Enrique Doster and Steven Lakin
 ### Date:		     2 October 2018
 ### Purpose: 	   These set of repository is for making sbatch scripts for each pair of fastq samples and submits those scripts to the Slurm job scheduler
 
-### The assembly process can begin with either raw reads or non-host reads. Carefully consider which scripts are being used and confirm that the right number of nucleotides are removed from the start of the reads. 
-
-### First, ensure that you samples reads are uploaded to SUMMIT, in /scratch/summit/$USER/ . I recommend logging in to ANGUS and using sftp to "put" reads unto SUMMIT. CSU's VPN makes it difficult to sftp from SUMMIT to ANGUS.
+### The assembly process can begin with either raw reads or non-host reads.
+- Carefully consider which scripts are being used and confirm that the right number of nucleotides are removed from the start of the reads. 
+- First, ensure that you samples reads are uploaded to SUMMIT, in /scratch/summit/$USER/ . I recommend logging in to ANGUS and using sftp to "put" reads unto SUMMIT. CSU's VPN makes it difficult to sftp from SUMMIT to ANGUS.
 
 # MEG-summit-assembly Workflow
 ### You will have to edit the parallel_onlyassembly.bash and SLURM_task_launcher.sh scripts

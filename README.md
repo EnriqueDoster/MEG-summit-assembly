@@ -29,11 +29,12 @@ cd MEG-summit-assembly
 parallel -j 1 "/scratch/summit/$USER/MEG-summit-assembly/parallel_onlyassembly.bash {}" ::: /scratch/summit/$USER/proj_dir/*R1.fastq.gz
 
 ## Test one sbatch script in your output_directory
-#View queue
+sbatch output_dir/test_SLURM.sh
+### View queue
 squeue -u $USER
-#Cancel all the jobs for a user:
+### Cancel all the jobs for a user:
 scancel -u $USER
-#If sbatch script completes succesfully, prepare the SLURM_task_launcher.sh script. Edit output dir and timing of submission
+### If sbatch script completes succesfully, prepare the SLURM_task_launcher.sh script. Edit output dir and timing of submission
 
 ## Submit the remaining sbatch scripts using the SLURM_task_launcher.sh
 sbatch /scratch/summit/$USER/MEG-summit-assembly/SLURM_task_launcher.sh

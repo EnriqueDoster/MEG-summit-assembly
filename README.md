@@ -17,11 +17,14 @@ ssh scompile
 
 ## Purge and load existing modules
 module purge
+
 module load gnu_parallel/20160622
 
 ## Navigate to directory where you want stage your scrips
 cd /scratch/summit/$USER/
+
 git clone https://github.com/EnriqueDoster/MEG-summit-assembly.git
+
 cd MEG-summit-assembly
 
 ### Create sbatch scripts for your samples

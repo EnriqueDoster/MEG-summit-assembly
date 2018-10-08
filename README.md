@@ -1,7 +1,7 @@
 # MEG-summig-assembly
-## Written by:	 Enrique Doster and Steven Lakin
-## Date:		     2 October 2018
-## Purpose: 	   These set of repository is for making sbatch scripts for each pair of fastq samples and submits those scripts to the Slurm job scheduler
+### Written by:	 Enrique Doster and Steven Lakin
+### Date:		     2 October 2018
+### Purpose: 	   These set of repository is for making sbatch scripts for each pair of fastq samples and submits those scripts to the Slurm job scheduler
 
 ## The assembly process can begin with either raw reads or non-host reads. Carefully consider which scripts are being used and confirm that the right number of nucleotides are removed from the start of the reads. 
 

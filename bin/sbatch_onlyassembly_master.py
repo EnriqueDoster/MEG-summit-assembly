@@ -7,7 +7,7 @@ import sys
 import gzip
 import io
 
-#USAGE : python sbatch_assembly_master.py -f ~/Dropbox/Reference_resources/Useful_code/Python/test_R1.gz -r ~/Dropbox/Reference_resources/Useful_code/Python/test_R2.gz -o test/
+#USAGE : python sbatch_onlyassembly_master.py -f /PATH/TO/READS/test_R1.gz -r /PATH/TO/READS/test_R2.gz -o test/
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--forward', type=str, required=True,
@@ -22,11 +22,11 @@ parser.add_argument('-o', '--output', required=True,
 TRIMMOMATIC = '/opt/Trimmomatic-0.36'
 adapters = "../containers/data/adapters/nextera.fa"
 fqc_adapters = "../containers/data/adapters/nextera.tab"
-leading = '10' ## To remove UMI's
+leading = '0' ## To remove UMI's
 trailing = '3'
 slidingwindow = "4:15"
 minlen = '36'
-threads= '11'
+threads= '8'
 
 
 
@@ -36,19 +36,18 @@ if __name__ == "__main__":
         print("outdir path doesn't exist. trying to make")
         os.makedirs(args.output)
     print(args.forward.split('/')[-1].split('_')[0])
-    samplename = str(args.forward.split('/')[-1].split('_')[0])
+    samplename = str(args.forward.split('/')[-1].split('.R1')[0])
     print(samplename)
     with open(args.output + '/' + samplename + '_SLURM_script.sh', 'w') as fout:
         ## First, write the SBATCH information
         shebang = '#!/bin/bash'
-        line2 = '#SBATCH --job-name=launcher%j \n \
-        #SBATCH --partition=shas \n \
-        #SBATCH --mem=200GB \n \
-        #SBATCH --ntasks=1 \n \
-        #SBATCH --cpus-per-task=11'
-        line3 = '#SBATCH --output=assembly_log%j'
-        line4 = '#SBATCH --time=10:00:00'
-        fout.write('{}\n{}\n{}\n{}\n'.format(shebang,line2,line3,line4)) # Write out all necessary information for slurm at top of script
+        job_name = ('#SBATCH --job-name={}_assembly%j'.format(samplename)) 
+        partition = '#SBATCH --partition=shas'
+        nodes= '#SBATCH --nodes=1'
+	mem = '#SBATCH --mem=50000'
+	log = ('#SBATCH --output={}_log%j'.format(samplename))
+        time = '#SBATCH --time=23:55:00'
+        fout.write('{}\n{}\n{}\n{}\n{}\n{}\n{}\n'.format(shebang,job_name,partition,nodes,mem,log,time)) # Write out all necessary information for slurm at top of script
         # Load modules
         purge_mod = 'module purge'
         mod_jkd = 'module load jdk/1.8.0'
@@ -84,3 +83,4 @@ if __name__ == "__main__":
         assemble_fa = ('singularity exec /scratch/summit/edoster@colostate.edu/EnriqueDoster-MEG-summit-assembly-master-latest.simg /usr/local/bin/idba_ud --num_threads {} -r temp{}/interleavened.fasta -o temp{}/idba'.format(threads,samplename,samplename))
         rename_contig = ('cp temp{}/idba/contig.fa {}.contigs.fasta'.format(samplename,samplename))
         fout.write('{}\n{}\n{}\n{}\n'.format(mk_temp_idba,merge_fq,assemble_fa,rename_contig))
+

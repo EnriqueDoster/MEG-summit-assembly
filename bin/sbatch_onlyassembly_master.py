@@ -20,12 +20,7 @@ parser.add_argument('-o', '--output', required=True,
 
 ## Other parameters
 TRIMMOMATIC = '/opt/Trimmomatic-0.36'
-adapters = "../containers/data/adapters/nextera.fa"
-fqc_adapters = "../containers/data/adapters/nextera.tab"
 leading = '0' ## To remove UMI's
-trailing = '3'
-slidingwindow = "4:15"
-minlen = '36'
 threads= '8'
 
 
@@ -54,8 +49,6 @@ if __name__ == "__main__":
         mod_singularity = 'module load singularity/2.5.2'
         mod_gcc = 'module load gcc/6.1.0'
         mod_mpi = 'module load openmpi/2.0.1'
-        #execute mod_singularity
-        #exec_singularity = 'srun singularity run /scratch/summit/edoster@colostate.edu/EnriqueDoster-MEG-summit-assembly-master-latest.simg'
         # Change to output directory
         cd_out_dir= ('cd {}'.format(args.output))
         fout.write('{}\n{}\n{}\n{}\n{}\n{}\n'.format(purge_mod,mod_jkd,mod_singularity,mod_gcc, mod_mpi, cd_out_dir)) # Write out all necessary information for slurm at top of script
@@ -64,12 +57,8 @@ if __name__ == "__main__":
                 PE \
                 {} {} -baseout {} \
                 -threads {} \
-                ILLUMINACLIP:{}:2:30:10:3:TRUE \
                 LEADING:{} \
-                TRAILING:{} \
-                SLIDINGWINDOW:{} \
-                MINLEN:{} \
-                2> {}.trimmomatic.stats.log'.format(TRIMMOMATIC,args.forward,args.reverse,samplename,threads,adapters,leading,trailing,slidingwindow,minlen,samplename))
+                2> {}.trimmomatic.stats.log'.format(TRIMMOMATIC,args.forward,args.reverse,samplename,threads,leading,samplename))
         clean_up_trimm = ('gzip -c {}_1P > {}.1P.fastq.gz \n \
             gzip -c {}_2P > {}.2P.fastq.gz \n \
             rm {}_1P \n \

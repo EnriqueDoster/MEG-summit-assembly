@@ -29,6 +29,7 @@ cd MEG-summit-assembly
 
 ### Create sbatch scripts for your samples
 - Edit MEG-summit-assembly/parallel_onlyassembly.bash file to change the output_directory and confirm that your samples have similar naming conventions (ie. sample_R1_001.fastq.gz vs sample_R1.fastq.gz). Then command like below:
+
 parallel -j 1 "/scratch/summit/$USER/MEG-summit-assembly/parallel_onlyassembly.bash {}" ::: /scratch/summit/$USER/proj_dir/*R1.fastq.gz
 
 ## Test one sbatch script in your output_directory

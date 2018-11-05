@@ -56,6 +56,16 @@ From: debian:jessie-slim
     cd bwa-${BWA_VERSION}
     make && sudo mv bwa /usr/local/bin
     cd ..
+    
+    # Bedtools
+    cd /usr/local/
+    aria2c -x 6 -s 6 https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz
+    tar -zxvf bedtools-2.27.1.tar.gz
+    cd /usr/local/bedtools2
+    make
+    ln -s /usr/local/bedtools2/bin/* /usr/local/bin/
+    
+   
 
 %test
     which idba_ud

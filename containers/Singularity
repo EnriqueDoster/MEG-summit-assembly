@@ -7,7 +7,7 @@ From: debian:jessie-slim
     apt update \
     && apt install -y --no-install-recommends \
     build-essential ca-certificates sudo\
-    git make automake autoconf openjdk-7-jre openjdk-11-jre-headless \
+    git make automake autoconf default-jdk openjdk-7-jre openjdk-11-jre-headless \
     wget unzip sed \
     python3-pip python3-docopt python3-pytest python-dev python3-dev\
     libcurl4-openssl-dev libssl-dev zlib1g-dev fonts-texgyre \

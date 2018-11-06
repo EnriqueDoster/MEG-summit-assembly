@@ -89,11 +89,11 @@ From: debian:jessie-slim
     cd /
     
     # bbmap
-    wget https://sourceforge.net/projects/bbmap/files/latest/download
-    cd /usr/local
-    tar xzf download
-    ln -s /usr/local/bbmap/* /usr/local/bin/
-    cd /
+    #wget https://sourceforge.net/projects/bbmap/files/latest/download
+    #cd /usr/local
+    #tar xzf download
+    #ln -s /usr/local/bbmap/* /usr/local/bin/
+    #cd /
     #export JAVA_HOME=`/usr/libexec/java_home`
    
 

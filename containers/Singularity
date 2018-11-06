@@ -38,6 +38,8 @@ From: debian:jessie-slim
     unzip /opt/trimmomatic.zip -d /opt/ && \
     rm /opt/trimmomatic.zip
     cd /
+    
+    # install biopython
     python3 -m pip install biopython
     
     # INSTALLING SOME DEPENDENCIES
@@ -45,20 +47,20 @@ From: debian:jessie-slim
     #sudo apt-get --yes update
     #sudo apt-get --yes install locales
 
-    sudo locale-gen en_US.UTF-8
+    #sudo locale-gen en_US.UTF-8
     #sudo update-locale
 
     # SAMTOOLS
-    HTSLIB_VERSION=1.8 # indexes versions for samtools and bcftools
-    wget -O "samtools.tar.gz" https://github.com/samtools/samtools/archive/${HTSLIB_VERSION}.tar.gz
-    tar xf samtools.tar.gz
-    cd samtools-${HTSLIB_VERSION}
-    autoheader
-    autoconf -Wno-syntax
-    ./configure --prefix /usr/local/bin
-    make
-    sudo make install
-    cd /
+    #HTSLIB_VERSION=1.8 # indexes versions for samtools and bcftools
+    #wget -O "samtools.tar.gz" https://github.com/samtools/samtools/archive/${HTSLIB_VERSION}.tar.gz
+    #tar xf samtools.tar.gz
+    #cd samtools-${HTSLIB_VERSION}
+    #autoheader
+    #autoconf -Wno-syntax
+    #./configure --prefix /usr/local/bin
+    #make
+    #sudo make install
+    #cd /
 
     # BWA
     #cd /usr/local/bin

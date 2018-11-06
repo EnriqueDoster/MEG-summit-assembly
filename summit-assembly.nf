@@ -77,7 +77,7 @@ process QualityControl {
     """
 }
 
-/*
+
 trimmomatic_stats.toSortedList().set { trim_stats }
 
 process QCStats {
@@ -99,7 +99,7 @@ process QCStats {
     python3 $baseDir/bin/trimmomatic_stats.py -i ${stats} -o trimmomatic.stats
     """
 }
-*/
+
 
 
 if( !params.host_index ) {
@@ -162,7 +162,7 @@ process RemoveHostDNA {
 
 idxstats_logs.toSortedList().set { host_removal_stats }
 
-/*
+
 process HostRemovalStats {
     tag { dataset_id }
 
@@ -181,7 +181,8 @@ process HostRemovalStats {
     python3 $baseDir/bin/samtools_idxstats.py -i ${stats} -o host.removal.stats
     """
 }
-*/
+
+
 process BAMToFASTQ {
     tag { dataset_id }
 
@@ -201,11 +202,12 @@ process BAMToFASTQ {
       -fq2 ${dataset_id}.non.host.R2.fastq
     """
 }
-/*
+
+
 process AssembleReads {
     tag { dataset_id }
 
-    publishDir "${params.output}/AssembledFiles", mode: "symlink"
+    publishDir "${params.output}/AssembledReads", mode: "copy"
 
     input:
         set dataset_id, file(forward), file(reverse) from non_host_fastq
@@ -218,12 +220,10 @@ process AssembleReads {
     mkdir -p temp/idba
     fq2fa --merge --filter <( zcat $forward) <( zcat $reverse ) temp/interleavened.fasta
     idba_ud --num_threads 60 -l temp/interleavened.fasta -o temp/idba
-
-	cp temp/idba/contig.fa ${dataset_id}.contigs.fasta
-
+    cp temp/idba/contig.fa ${dataset_id}.contigs.fasta
     """
 }
-*/
+
 
 def nextflow_version_error() {
     println ""

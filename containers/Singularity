@@ -73,6 +73,12 @@ From: debian:jessie-slim
     make
     cd /
    
+    # vcflibs 
+    cd /usr/local
+    git clone --recursive git://github.com/ekg/vcflib.git
+    cd vcflib
+    make
+    cd /
 
 %test
     which idba_ud

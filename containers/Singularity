@@ -80,13 +80,13 @@ From: debian:jessie-slim
     cd /
     
     # freebayes
-    cd /usr/local
-    git clone --recursive git://github.com/ekg/freebayes.git
-    cd freebayes
-    make
-    ln -s /usr/local/freebayes/bin/* /usr/local/bin/
-    ln -s /usr/local/freebayes/vcflib/bin/* /usr/local/bin/ 
-    cd /
+    #cd /usr/local
+    #git clone --recursive git://github.com/ekg/freebayes.git
+    #cd freebayes
+    #make
+    #ln -s /usr/local/freebayes/bin/* /usr/local/bin/
+    #ln -s /usr/local/freebayes/vcflib/bin/* /usr/local/bin/ 
+    #cd /
     
     # bbmap
     #wget https://sourceforge.net/projects/bbmap/files/latest/download

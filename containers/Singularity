@@ -7,7 +7,7 @@ From: debian:jessie-slim
     apt update \
     && apt install -y --no-install-recommends \
     build-essential ca-certificates sudo\
-    git make automake autoconf openjdk-7-jre wget unzip sed \
+    git make automake autoconf openjdk-7-jre default-jre wget unzip sed \
     python3-pip python3-docopt python3-pytest python-dev python3-dev\
     libcurl4-openssl-dev libssl-dev zlib1g-dev fonts-texgyre \
     gcc g++ gfortran libblas-dev liblapack-dev \
@@ -50,16 +50,16 @@ From: debian:jessie-slim
     #sudo update-locale
 
     # SAMTOOLS
-    #HTSLIB_VERSION=1.8 # indexes versions for samtools and bcftools
-    #wget -O "samtools.tar.gz" https://github.com/samtools/samtools/archive/${HTSLIB_VERSION}.tar.gz
-    #tar xf samtools.tar.gz
-    #cd samtools-${HTSLIB_VERSION}
-    #autoheader
-    #autoconf -Wno-syntax
-    #./configure --prefix /usr/local
-    #make
-    #sudo make install
-    #cd /
+    HTSLIB_VERSION=1.8 # indexes versions for samtools and bcftools
+    wget -O "samtools.tar.gz" https://github.com/samtools/samtools/archive/${HTSLIB_VERSION}.tar.gz
+    tar xf samtools.tar.gz
+    cd samtools-${HTSLIB_VERSION}
+    autoheader
+    autoconf -Wno-syntax
+    ./configure --prefix /usr/local/bin
+    make
+    sudo make install
+    cd /
 
     # BWA
     cd /usr/local/bin
@@ -71,27 +71,30 @@ From: debian:jessie-slim
     cd /
     
     # Bedtools
-    #cd /usr/local/
-    #aria2c -x 6 -s 6 https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz
-    #tar -zxvf bedtools-2.27.1.tar.gz
-    #cd /usr/local/bedtools2
-    #make
-    #ln -s /usr/local/bedtools2/bin/* /usr/local/bin/
-    #cd /
+    cd /usr/local/
+    aria2c -x 6 -s 6 https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz
+    tar -zxvf bedtools-2.27.1.tar.gz
+    cd /usr/local/bedtools2
+    make
+    ln -s /usr/local/bedtools2/bin/* /usr/local/bin/ ## probably the best way to add to your path
+    cd /
     
     # freebayes
+    cd /usr/local
+    git clone --recursive git://github.com/ekg/freebayes.git
+    cd freebayes
+    make
+    ln -s /usr/local/freebayes/bin/* /usr/local/bin/
+    ln -s /usr/local/freebayes/vcflib/bin/* /usr/local/bin/ 
+    cd /
+    
+    # bbmap
+    #wget https://sourceforge.net/projects/bbmap/files/latest/download
     #cd /usr/local
-    #git clone --recursive git://github.com/ekg/freebayes.git
-    #cd freebayes
-    #make
-    #cd /
+    #tar xzf download
+    #ln -s /usr/local/bbmap/* /usr/local/bin/
+    #export JAVA_HOME=`/usr/libexec/java_home`
    
-    # vcflibs 
-    #cd /usr/local
-    #git clone --recursive git://github.com/ekg/vcflib.git
-    #cd vcflib
-    #make
-    #cd /
 
 %test
     which idba_ud

@@ -31,82 +31,8 @@ From: debian:jessie-slim
     apt-get install -qy oracle-java10-installer 
     java -version
     
-    ## IDBA
-    cd /opt
-    git clone https://github.com/loneknightpy/idba \
-    && cd idba \
-    && sed -i 's/kMaxShortSequence = 128/kMaxShortSequence = 500/' src/sequence/short_sequence.h \
-    && ./build.sh \
-    && make
-    cd /usr/local/bin
-    ln -s /opt/idba/bin/idba_ud
-    ln -s /opt/idba/bin/fq2fa
-    cd /
     
-    ## Trimmomatic
-    TRIMMOMATIC_SOURCE="Trimmomatic-0.36.zip" \
-    TRIMMOMATIC_HOME="/opt/trimmomatic"
-    wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.36.zip -O /opt/trimmomatic.zip && \
-    unzip /opt/trimmomatic.zip -d /opt/ && \
-    rm /opt/trimmomatic.zip
-    cd /
-    python3 -m pip install biopython
-    
-    # INSTALLING SOME DEPENDENCIES
-    #apt-get install --yes sudo
-
-    #sudo apt-get --yes update
-    #sudo apt-get --yes install locales
-
-    #sudo locale-gen en_US.UTF-8
-    #sudo update-locale
-
-    # SAMTOOLS
-    HTSLIB_VERSION=1.8 # indexes versions for samtools and bcftools
-    wget -O "samtools.tar.gz" https://github.com/samtools/samtools/archive/${HTSLIB_VERSION}.tar.gz
-    tar xf samtools.tar.gz
-    cd samtools-${HTSLIB_VERSION}
-    autoheader
-    autoconf -Wno-syntax
-    ./configure --prefix /usr/local/bin
-    make
-    sudo make install
-    cd /
-
-    # BWA
-    cd /usr/local/bin
-    BWA_VERSION=0.7.17
-    wget -O "bwa.tar.gz" https://github.com/lh3/bwa/archive/v${BWA_VERSION}.tar.gz
-    tar xf bwa.tar.gz
-    cd bwa-${BWA_VERSION}
-    make && sudo mv bwa /usr/local/bin
-    cd /
-    
-    # Bedtools
-    cd /usr/local/
-    aria2c -x 6 -s 6 https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz
-    tar -zxvf bedtools-2.27.1.tar.gz
-    cd /usr/local/bedtools2
-    make
-    ln -s /usr/local/bedtools2/bin/* /usr/local/bin/ ## probably the best way to add to your path
-    cd /
-    
-    # freebayes
-    #cd /usr/local
-    #git clone --recursive git://github.com/ekg/freebayes.git
-    #cd freebayes
-    #make
-    #ln -s /usr/local/freebayes/bin/* /usr/local/bin/
-    #ln -s /usr/local/freebayes/vcflib/bin/* /usr/local/bin/ 
-    #cd /
-    
-    # bbmap
-    #wget https://sourceforge.net/projects/bbmap/files/latest/download
-    #cd /usr/local
-    #tar xzf download
-    #ln -s /usr/local/bbmap/* /usr/local/bin/
-    #export JAVA_HOME=`/usr/libexec/java_home`
    
 
 %test
-    which idba_ud
+    which java

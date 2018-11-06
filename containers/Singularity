@@ -41,7 +41,6 @@ From: debian:jessie-slim
     python3 -m pip install biopython
     
     # INSTALLING SOME DEPENDENCIES
-    #apt-get install --yes sudo
 
     #sudo apt-get --yes update
     #sudo apt-get --yes install locales
@@ -50,16 +49,16 @@ From: debian:jessie-slim
     #sudo update-locale
 
     # SAMTOOLS
-    #HTSLIB_VERSION=1.8 # indexes versions for samtools and bcftools
-    #wget -O "samtools.tar.gz" https://github.com/samtools/samtools/archive/${HTSLIB_VERSION}.tar.gz
-    #tar xf samtools.tar.gz
-    #cd samtools-${HTSLIB_VERSION}
-    #autoheader
-    #autoconf -Wno-syntax
-    #./configure --prefix /usr/local/bin
-    #make
-    #sudo make install
-    #cd /
+    HTSLIB_VERSION=1.8 # indexes versions for samtools and bcftools
+    wget -O "samtools.tar.gz" https://github.com/samtools/samtools/archive/${HTSLIB_VERSION}.tar.gz
+    tar xf samtools.tar.gz
+    cd samtools-${HTSLIB_VERSION}
+    autoheader
+    autoconf -Wno-syntax
+    ./configure --prefix /usr/local/bin
+    make
+    sudo make install
+    cd /
 
     # BWA
     #cd /usr/local/bin

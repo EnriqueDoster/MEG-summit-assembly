@@ -64,7 +64,14 @@ From: debian:jessie-slim
     cd /usr/local/bedtools2
     make
     ln -s /usr/local/bedtools2/bin/* /usr/local/bin/
+    cd /
     
+    # freebayes
+    cd /usr/local
+    git clone --recursive git://github.com/ekg/freebayes.git
+    cd freebayes
+    make
+    cd /
    
 
 %test

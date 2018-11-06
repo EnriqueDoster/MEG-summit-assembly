@@ -100,6 +100,24 @@ process QCStats {
     """
 }
 
+process DedupReads {
+    tag { dataset_id }
+
+    publishDir "${params.output}/DedupReads", mode: "copy"
+
+    input:
+        set dataset_id, file(forward), file(reverse) from paired_fastq
+
+    output:
+	set dataset_id, file("${dataset_id}.deduped.R1.fastq.gz"), file("${dataset_id}.deduped.R2.fastq.gz") into (deduped_fastq)
+
+    """
+    dedupe.sh in1=${forward} in2=${reverse} out={dataset_id}.interleaved.fastq ac=f 
+    reformat.sh in={dataset_id}.interleaved.fastq out1={dataset_id}.deduped.R1.fastq out2={dataset_id}.deduped.R2.fastq
+    rm interleaved.fastq
+    gzip *.fastq
+    """
+}
 
 
 if( !params.host_index ) {
@@ -126,7 +144,7 @@ process AlignReadsToHost {
     publishDir "${params.output}/AlignReadsToHost", mode: "copy"
 
     input:
-        set dataset_id, file(forward), file(reverse) from paired_fastq
+        set dataset_id, file(forward), file(reverse) from deduped_fastq
         file index from host_index.first()
         file host
 
@@ -181,7 +199,6 @@ process HostRemovalStats {
     python3 $baseDir/bin/samtools_idxstats.py -i ${stats} -o host.removal.stats
     """
 }
-
 
 process BAMToFASTQ {
     tag { dataset_id }

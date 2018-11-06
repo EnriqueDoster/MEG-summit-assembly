@@ -47,38 +47,38 @@ From: debian:jessie-slim
     ./configure --prefix /usr/local
     make
     sudo make install
-    cd ..
+    cd /
 
     # BWA
-    BWA_VERSION=0.7.17
-    wget -O "bwa.tar.gz" https://github.com/lh3/bwa/archive/v${BWA_VERSION}.tar.gz
-    tar xf bwa.tar.gz
-    cd bwa-${BWA_VERSION}
-    make && sudo mv bwa /usr/local/bin
-    cd ..
+    #BWA_VERSION=0.7.17
+    #wget -O "bwa.tar.gz" https://github.com/lh3/bwa/archive/v${BWA_VERSION}.tar.gz
+    #tar xf bwa.tar.gz
+    #cd bwa-${BWA_VERSION}
+    #make && sudo mv bwa /usr/local/bin
+    #cd /
     
     # Bedtools
-    cd /usr/local/
-    aria2c -x 6 -s 6 https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz
-    tar -zxvf bedtools-2.27.1.tar.gz
-    cd /usr/local/bedtools2
-    make
-    ln -s /usr/local/bedtools2/bin/* /usr/local/bin/
-    cd /
+    #cd /usr/local/
+    #aria2c -x 6 -s 6 https://github.com/arq5x/bedtools2/releases/download/v2.27.1/bedtools-2.27.1.tar.gz
+    #tar -zxvf bedtools-2.27.1.tar.gz
+    #cd /usr/local/bedtools2
+    #make
+    #ln -s /usr/local/bedtools2/bin/* /usr/local/bin/
+    #cd /
     
     # freebayes
-    cd /usr/local
-    git clone --recursive git://github.com/ekg/freebayes.git
-    cd freebayes
-    make
-    cd /
+    #cd /usr/local
+    #git clone --recursive git://github.com/ekg/freebayes.git
+    #cd freebayes
+    #make
+    #cd /
    
     # vcflibs 
-    cd /usr/local
-    git clone --recursive git://github.com/ekg/vcflib.git
-    cd vcflib
-    make
-    cd /
+    #cd /usr/local
+    #git clone --recursive git://github.com/ekg/vcflib.git
+    #cd vcflib
+    #make
+    #cd /
 
 %test
     which idba_ud

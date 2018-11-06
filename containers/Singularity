@@ -14,7 +14,7 @@ From: debian:jessie-slim
     sudo update-locale
 
     sudo apt-get --yes install build-essential ca-certificates openjdk-7-jre \
-    git gcc make autoconf automake wget git zlib1g-dev libbz2-dev \
+    git gcc make autoconf automake wget zlib1g-dev libbz2-dev \
     libncurses5-dev curl unzip python-dev liblzma-dev libcurl4-openssl-dev \
     software-properties-common apt-transport-https \
     && rm -rf /var/lib/apt/lists/*

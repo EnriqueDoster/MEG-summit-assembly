@@ -7,7 +7,7 @@ From: debian:jessie-slim
     apt update \
     && apt install -y --no-install-recommends \
     build-essential ca-certificates sudo\
-    git make automake autoconf openjdk-7-jre wget unzip sed \
+    git make automake autoconf openjdk-7-jre wget unzip sed locales \
     python3-pip python3-docopt python3-pytest python-dev python3-dev\
     libcurl4-openssl-dev libssl-dev zlib1g-dev fonts-texgyre \
     gcc g++ gfortran libblas-dev liblapack-dev \
@@ -46,7 +46,7 @@ From: debian:jessie-slim
     #sudo apt-get --yes update
     #sudo apt-get --yes install locales
 
-    #sudo locale-gen en_US.UTF-8
+    sudo locale-gen en_US.UTF-8
     #sudo update-locale
 
     # SAMTOOLS

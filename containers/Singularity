@@ -4,6 +4,7 @@ From: debian:jessie-slim
 #Includes idba, trimmomatic, samtools, bwa, bedtools, freebayes, bbmap, resistomeanalyzer, rarefactionanalyzer
 
 %post
+    ## Jave install doesn't work, but can load java module from summit
     apt update \
     && apt install -y --no-install-recommends \
     build-essential ca-certificates sudo \
@@ -12,7 +13,7 @@ From: debian:jessie-slim
     python3-pip python3-docopt python3-pytest python-dev python3-dev\
     libcurl4-openssl-dev libssl-dev zlib1g-dev fonts-texgyre \
     gcc g++ gfortran libblas-dev liblapack-dev dos2unix\
-    r-base-core r-recommended \
+    r-base-core r-recommended hmmer\
     && rm -rf /var/lib/apt/lists/*
 
     python3 -m pip install biopython

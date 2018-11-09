@@ -1,7 +1,7 @@
 Bootstrap: docker
 From: debian:jessie-slim
 
-#Includes idba, trimmomatic, samtools, bwa, bedtools, freebayes, bbmap
+#Includes idba, trimmomatic, samtools, bwa, bedtools, freebayes, bbmap, resistomeanalyzer, rarefactionanalyzer
 
 %post
     apt update \
@@ -92,6 +92,25 @@ From: debian:jessie-slim
     ln -s /usr/local/bbmap/* /usr/local/bin/
     cd /
     export JAVA_HOME=`/usr/libexec/java_home`
+    
+    # resistomeanalyzer
+    cd /usr/local
+    git clone https://github.com/cdeanj/resistomeanalyzer.git
+    cd resistomeanalyzer
+    make
+    cp resistome /usr/local/bin
+    #ln -s /usr/local/resistomeanalyzer/* /usr/local/bin/
+    cd /
+
+    # RarefactionAnalyzer
+    cd /usr/local
+    git clone https://github.com/cdeanj/RarefactionAnalyzer.git
+    cd RarefactionAnalyzer
+    make
+    cp rarefaction /usr/local/bin
+    cd /
+
+    
 
 %test
     #which bwa

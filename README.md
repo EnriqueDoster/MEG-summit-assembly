@@ -14,17 +14,20 @@ ssh user@colostate.edu@login.rc.colorado.edu
 
 ## To access Summit compile nodes:
 ssh scompile
-
 ## Purge and load existing modules
 module purge
-
+module load jdk/1.8.0
+module load singularity/2.5.2
 module load gnu_parallel/20160622
+module load gcc/6.1.0
+module load openmpi/2.0.1
 
 ## Navigate to directory where you want stage your scrips
 cd /scratch/summit/$USER/
-
+## install nextflow
+curl -s https://get.nextflow.io | bash
+## Download this repository
 git clone https://github.com/EnriqueDoster/MEG-summit-assembly.git
-
 cd MEG-summit-assembly
 
 ### Create sbatch scripts for your samples
@@ -42,3 +45,10 @@ scancel -u $USER
 
 ## Submit the remaining sbatch scripts using the SLURM_task_launcher.sh
 sbatch /scratch/summit/$USER/MEG-summit-assembly/SLURM_task_launcher.sh
+
+
+
+### Still in progress - development of nextflow script
+# main_dedup.nf
+# use the following command in a SLURM launcher script.
+mpirun --pernode ./nextflow run main_dedup.nf -w /scratch/summit/edoster@colostate.edu/HMM_steps/proj7/work --threads 1 --output /scratch/summit/edoster@colostate.edu/HMM_steps/proj7/ --host /scratch/summit/edoster@colostate.edu/HMM_steps/MEG-summit-assembly/Livestock_complete_genomes.fa --reads "/scratch/summit/edoster@colostate.edu/proj7/AFE13_R{1,2}.fastq.gz" -profile slurm -with-mpi -resume

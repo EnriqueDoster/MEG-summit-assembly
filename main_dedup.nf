@@ -8,9 +8,6 @@ vim: syntax=groovy
 if (params.help ) {
     return help()
 }
-if( !nextflow.version.matches('0.25+') ) {
-    return nextflow_version_error()
-}
 if( params.host_index ) { 
     host_index = Channel.fromPath(params.host_index).toSortedList() 
     //if( host_index.isEmpty() ) return index_error(host_index)
@@ -32,7 +29,6 @@ if( params.annotation ) {
     if( !annotation.exists() ) return annotation_error(annotation)
 }
 
-KRAKENDB = params.KRAKENDB
 threads = params.threads
 
 threshold = params.threshold
@@ -55,6 +51,7 @@ Channel
 process RunQC {
     tag { sample_id }
 
+
     publishDir "${params.output}/RunQC", mode: 'copy', pattern: '*.fastq',
         saveAs: { filename ->
             if(filename.indexOf("P.fastq") > 0) "Paired/$filename"
@@ -71,7 +68,7 @@ process RunQC {
         file("${sample_id}.trimmomatic.stats.log") into (trimmomatic_stats)
 
     """
-    java -jar ${TRIMMOMATIC}/trimmomatic-0.36.jar \
+    /usr/lib/jvm/java-7-openjdk-amd64/bin/java -jar ${TRIMMOMATIC}/trimmomatic-0.36.jar \
       PE \
       -threads ${threads} \
       $forward $reverse -baseout ${sample_id} \
@@ -128,6 +125,23 @@ if( !params.host_index ) {
         """
     }
 }
+process DedupReads {
+    tag { sample_id }
+
+    publishDir "${params.output}/DedupReads", mode: "copy"
+
+    input:
+        set sample_id, file(forward), file(reverse) from paired_fastq
+
+    output:
+        set sample_id, file("${sample_id}.dd.R1.fastq"), file("${sample_id}.dd.R2.fastq") into (dedup_reads)
+
+    """
+    dedupe.sh in1=${forward} in2=${reverse} out=${sample_id}.interleaved.fastq ac=f
+    reformat.sh in=${sample_id}.interleaved.fastq out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq
+    rm ${sample_id}.interleaved.fastq
+    """
+}
 
 process AlignReadsToHost {
     tag { sample_id }
@@ -135,7 +149,7 @@ process AlignReadsToHost {
     publishDir "${params.output}/AlignReadsToHost", mode: "copy"
         
     input:
-        set sample_id, file(forward), file(reverse) from paired_fastq
+        set sample_id, file(forward), file(reverse) from dedup_reads
         file index from host_index.first()
         file host
             
@@ -199,7 +213,7 @@ process BAMToFASTQ {
         set sample_id, file(bam) from non_host_bam
 
     output:
-        set sample_id, file("${sample_id}.non.host.R1.fastq"), file("${sample_id}.non.host.R2.fastq") into (non_host_fastq, non_host_fastq_kraken)
+        set sample_id, file("${sample_id}.non.host.R1.fastq"), file("${sample_id}.non.host.R2.fastq") into (non_host_fastq)
 
     """
     bedtools  \
@@ -350,25 +364,6 @@ process RunSNPFinder {
     """
 }
 
-/*
-process RunKraken {
-    tag { sample_id }
-
-    publishDir "${params.output}/RunKraken", mode: "copy"
-
-    input:
-       set sample_id, file(forward), file(reverse) from non_host_fastq_kraken
-
-    output:
-       file("${sample_id}.kraken.report") into kraken_report
-
-    """
-    kraken --preload --db ${KRAKENDB} --fastq-input ${forward} ${reverse} --threads ${threads} > ${sample_id}.kraken.raw
-    kraken-report --db ${KRAKENDB} ${sample_id}.kraken.raw > ${sample_id}.kraken.report
-    """
-}
-*/
-
 resistome.toSortedList().set { amr_l_to_w }
 
 process AMRLongToWide {
@@ -389,27 +384,6 @@ process AMRLongToWide {
     """
 }
 
-/*
-kraken_report.toSortedList().set { kraken_l_to_w }
-
-process KrakenLongToWide {
-    tag { }
-
-    publishDir "${params.output}/KrakenLongToWide", mode: "copy"
-
-    input:
-        file(kraken_reports) from kraken_l_to_w
-
-    output:
-        file("kraken_analytic_matrix.csv") into kraken_master_matrix
-
-    """
-    mkdir ret
-    python3 $baseDir/bin/kraken_long_to_wide.py -i ${kraken_reports} -o ret
-    mv ret/kraken_analytic_matrix.csv .
-    """
-}
-*/
 
 def nextflow_version_error() {
     println ""

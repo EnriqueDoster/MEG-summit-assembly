@@ -93,7 +93,7 @@ From: debian:jessie-slim
     tar xzf download
     ln -s /usr/local/bbmap/* /usr/local/bin/
     cd /
-    export JAVA_HOME=`/usr/libexec/java_home`
+    export JAVA_HOME=`/usr/lib/jvm/java-7-openjdk-amd64/bin/java`
     
     # resistomeanalyzer
     cd /usr/local

@@ -137,8 +137,8 @@ process DedupReads {
         set sample_id, file("${sample_id}.dd.R1.fastq"), file("${sample_id}.dd.R2.fastq") into (dedup_reads)
 
     """
-    dedupe.sh in1=${forward} in2=${reverse} out=${sample_id}.interleaved.fastq ac=f
-    reformat.sh in=${sample_id}.interleaved.fastq out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq
+    /usr/lib/jvm/java-7-openjdk-amd64/bin/java -Djava.library.path=/usr/local/bbmap/jni/ -ea -Xmx7185m -Xms7185m -cp /usr/local/bbmap/current/ jgi.Dedupe in1=${forward} in2=${reverse} out=${sample_id}.interleaved.fastq ac=f
+    /usr/lib/jvm/java-7-openjdk-amd64/bin/java -ea -Xmx200m -cp /usr/local/bbmap/current/ jgi.ReformatReads in=${sample_id}.interleaved.fastq out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq
     rm ${sample_id}.interleaved.fastq
     """
 }

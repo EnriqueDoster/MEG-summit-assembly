@@ -356,6 +356,154 @@ process HMMcontig_count {
 
 }
 
+process AlignToAMR {
+     tag { sample_id }
+
+     publishDir "${params.output}/AlignToAMR", mode: "copy"
+
+     input:
+         set sample_id, file(forward) from non_host_fastq_megares
+         file index from amr_index.first()
+         file amr
+
+     output:
+         set sample_id, file("${sample_id}.amr.alignment.sam") into (resistome_sam, rarefaction_sam)
+         set sample_id, file("${sample_id}.amr.alignment.dedup.bam") into (resistome_bam)
+     """
+     bwa mem ${amr} ${forward} -t ${params.threads} -R "${sample_id}" > ${sample_id}.amr.alignment.sam
+     samtools view -S -b ${sample_id}.amr.alignment.sam > ${sample_id}.amr.alignment.bam
+     samtools sort ${sample_id}.amr.alignment.bam -o ${sample_id}.amr.alignment.sorted.bam
+     samtools markdup -S ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.dedup.bam
+     rm ${sample_id}.amr.alignment.bam
+     rm ${sample_id}.amr.alignment.sorted.bam
+
+     """
+}
+
+
+process RunResistome {
+    tag { sample_id }
+
+    publishDir "${params.output}/RunResistome", mode: "copy"
+
+    input:
+        set sample_id, file(sam) from resistome_sam
+        file annotation
+        file amr
+
+    output:
+        file("${sample_id}.gene.tsv") into (resistome)
+
+    """
+    resistome \
+      -ref_fp ${amr} \
+      -annot_fp ${annotation} \
+      -sam_fp ${sam} \
+      -gene_fp ${sample_id}.gene.tsv \
+      -group_fp ${sample_id}.group.tsv \
+      -class_fp ${sample_id}.class.tsv \
+      -mech_fp ${sample_id}.mechanism.tsv \
+      -t ${threshold}
+    """
+}
+
+
+process RunFreebayes {
+    tag { sample_id }
+
+    publishDir "${params.output}/RunFreebayes", mode: "copy"
+
+    input:
+        set sample_id, file(bam) from resistome_bam
+        file annotation
+        file amr
+
+    output:
+        file("${sample_id}.results.vcf") into (SNP)
+
+    """
+    freebayes \
+      -f ${amr} \
+      -p 1 \
+      ${bam} |
+      vcffilter -f "QUAL > 20" > ${sample_id}.results.vcf
+    """
+}
+
+
+process RunRarefaction {
+    tag { sample_id }
+
+    publishDir "${params.output}/RunRarefaction", mode: "copy"
+
+    input:
+        set sample_id, file(sam) from rarefaction_sam
+        file annotation
+        file amr
+
+    output:
+        set sample_id, file("*.tsv") into (rarefaction)
+
+    """
+    rarefaction \
+      -ref_fp ${amr} \
+      -sam_fp ${sam} \
+      -annot_fp ${annotation} \
+      -gene_fp ${sample_id}.gene.tsv \
+      -group_fp ${sample_id}.group.tsv \
+      -class_fp ${sample_id}.class.tsv \
+      -mech_fp ${sample_id}.mech.tsv \
+      -min ${min} \
+      -max ${max} \
+      -skip ${skip} \
+      -samples ${samples} \
+      -t ${threshold}
+    """
+}
+
+process RunSNPFinder {
+    tag { sample_id }
+
+    publishDir "${params.output}/RunSNPFinder", mode: "copy"
+
+    input:
+        set sample_id, file(sam) from resistome_sam
+        file amr
+
+    output:
+        set sample_id, file("*.tsv") into (snp)
+
+    """
+    snpfinder \
+      -amr_fp ${amr} \
+      -sampe ${sam} \
+      -out_fp ${sample_id}.tsv
+    """
+}
+
+resistome.toSortedList().set { amr_l_to_w }
+
+process AMRLongToWide {
+    tag { }
+
+    publishDir "${params.output}/AMRLongToWide", mode: "copy"
+
+    input:
+        file(resistomes) from amr_l_to_w
+
+    output:
+        file("AMR_analytic_matrix.csv") into amr_master_matrix
+
+    """
+    mkdir ret
+    python3 $baseDir/bin/amr_long_to_wide.py -i ${resistomes} -o ret
+    mv ret/AMR_analytic_matrix.csv .
+    """
+}
+
+
+
+
 /*    Now deal with SNP reads seperately */
 
 process SNPAlignToAMR {
@@ -380,6 +528,36 @@ process SNPAlignToAMR {
      rm ${sample_id}.amr.alignment.bam
      rm ${sample_id}.amr.alignment.sorted.bam
      """
+}
+
+process SNPRunRarefaction {
+    tag { sample_id }
+
+    publishDir "${params.output}/SNPRunRarefaction", mode: "copy"
+
+    input:
+        set sample_id, file(sam) from rarefaction_SNP_sam
+        file annotation
+        file amr
+
+    output:
+        set sample_id, file("*.tsv") into (SNP_rarefaction)
+
+    """
+    rarefaction \
+      -ref_fp ${amr} \
+      -sam_fp ${sam} \
+      -annot_fp ${annotation} \
+      -gene_fp ${sample_id}.SNP.gene.tsv \
+      -group_fp ${sample_id}.SNP.group.tsv \
+      -class_fp ${sample_id}.SNP.class.tsv \
+      -mech_fp ${sample_id}.SNP.mech.tsv \
+      -min ${min} \
+      -max ${max} \
+      -skip ${skip} \
+      -samples ${samples} \
+      -t ${threshold}
+    """
 }
 
 process SNPRunResistome {
@@ -431,11 +609,11 @@ process SNPconfirmation {
     """
 }
 
-process SNPgene{
+process SNPgene_alignment{
 
   tag { sample_id }
 
-  publishDir "${params.output}/SNPconfirmation", mode: "copy"
+  publishDir "${params.output}/SNPgene_alignment", mode: "copy"
 
   input:
       set sample_id, file(sam) from resistome_SNP_sam_confirmation
@@ -449,7 +627,7 @@ process SNPgene{
       file("${sample_id}.fasta*") into (amr_SNP_index)
 
   """
-  python ${snp_confirmation} ${sam} ${gene_counts} ${snp_annotation} long
+  #python ${snp_confirmation} ${sam} ${gene_counts} ${snp_annotation} long
   #grep for unique gene names from confirmed counts
   #grep genes from the AMR database and make into FASTA
   # output is list
@@ -458,41 +636,6 @@ process SNPgene{
 
 
 
-
-
-
-
-/*
-process SNPRunRarefaction {
-    tag { sample_id }
-
-    publishDir "${params.output}/SNPRunRarefaction", mode: "copy"
-
-    input:
-        set sample_id, file(sam) from rarefaction_SNP_sam
-        file annotation
-        file amr
-
-    output:
-        set sample_id, file("*.tsv") into (SNP_rarefaction)
-
-    """
-    rarefaction \
-      -ref_fp ${amr} \
-      -sam_fp ${sam} \
-      -annot_fp ${annotation} \
-      -gene_fp ${sample_id}.SNP.gene.tsv \
-      -group_fp ${sample_id}.SNP.group.tsv \
-      -class_fp ${sample_id}.SNP.class.tsv \
-      -mech_fp ${sample_id}.SNP.mech.tsv \
-      -min ${min} \
-      -max ${max} \
-      -skip ${skip} \
-      -samples ${samples} \
-      -t ${threshold}
-    """
-}
-*/
 
 /*
 
@@ -558,9 +701,6 @@ process SNPAMRLongToWide {
     """
 }
 */
-
-
-
 
 
 

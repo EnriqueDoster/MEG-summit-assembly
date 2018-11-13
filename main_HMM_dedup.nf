@@ -431,8 +431,8 @@ process SNPconfirmation {
     """
 }
 
+/*
 process SNPgene{
-
   tag { sample_id }
 
   publishDir "${params.output}/SNPconfirmation", mode: "copy"
@@ -455,7 +455,7 @@ process SNPgene{
   # output is list
   """
 }
-
+*/
 
 
 

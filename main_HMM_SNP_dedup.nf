@@ -367,7 +367,7 @@ process AlignToAMR {
          file amr
 
      output:
-         set sample_id, file("${sample_id}.amr.alignment.sam") into (resistome_sam, rarefaction_sam)
+         set sample_id, file("${sample_id}.amr.alignment.sam") into (resistome_sam, rarefaction_sam,snpfinder_sam)
          set sample_id, file("${sample_id}.amr.alignment.dedup.bam") into (resistome_bam)
      """
      bwa mem ${amr} ${forward} -t ${params.threads} -R "${sample_id}" > ${sample_id}.amr.alignment.sam
@@ -467,7 +467,7 @@ process RunSNPFinder {
     publishDir "${params.output}/RunSNPFinder", mode: "copy"
 
     input:
-        set sample_id, file(sam) from resistome_sam
+        set sample_id, file(sam) from snpfinder_sam
         file amr
 
     output:
@@ -609,6 +609,7 @@ process SNPconfirmation {
     """
 }
 
+/*
 process SNPgene_alignment{
 
   tag { sample_id }
@@ -633,7 +634,7 @@ process SNPgene_alignment{
   # output is list
   """
 }
-
+*/
 
 
 

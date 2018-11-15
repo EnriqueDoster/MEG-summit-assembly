@@ -112,8 +112,14 @@ From: debian:jessie-slim
     cp rarefaction /usr/local/bin
     cd /
 
+    ## SNPfinder
+    cd /usr/local
+    git clone https://github.com/cdeanj/snpfinder.git
+    cd snpfinder
+    make
+    cp snpfinder /usr/local/bin
+    cd /
     
-
 %test
     #which bwa
     #which bedtools

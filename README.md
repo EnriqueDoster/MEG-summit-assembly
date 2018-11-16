@@ -19,14 +19,6 @@ module purge
 
 module load jdk/1.8.0
 
-module load singularity/2.5.2
-
-module load gnu_parallel/20160622
-
-module load gcc/6.1.0
-
-module load openmpi/2.0.1
-
 ## Navigate to directory where you want stage your scrips
 cd /scratch/summit/$USER/
 ## install nextflow

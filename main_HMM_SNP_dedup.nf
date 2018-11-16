@@ -52,7 +52,7 @@ if( params.hmm_group3 ) {
 
 
 threads = params.threads
-
+smem_threads = params.smem_threads
 threshold = params.threshold
 
 min = params.min
@@ -146,6 +146,7 @@ if( !params.host_index ) {
         """
     }
 }
+
 process DedupReads {
     tag { sample_id }
 
@@ -158,10 +159,7 @@ process DedupReads {
         set sample_id, file("${sample_id}.dd.R1.fastq"), file("${sample_id}.dd.R2.fastq") into (dedup_reads)
 
     """
-    #$JAVA -Djava.library.path=$BBMAP_JAVA -ea -cp $BBMAP_current jgi.Dedupe in1=${forward} in2=${reverse} out=${sample_id}.interleaved.fastq ac=f
-    #$JAVA -ea -cp $BBMAP_current jgi.ReformatReads in=${sample_id}.interleaved.fastq out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq
-    #rm ${sample_id}.interleaved.fastq
-    $JAVA -ea -cp $BBMAP_current clump.Clumpify in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t
+    /usr/lib/jvm/java-7-openjdk-amd64/bin/java -ea -cp /usr/local/bbmap/current/ clump.Clumpify in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t
     """
 }
 
@@ -235,7 +233,7 @@ process BAMToFASTQ {
         set sample_id, file(bam) from non_host_bam
 
     output:
-        set sample_id, file("${sample_id}.non.host.R1.fastq"), file("${sample_id}.non.host.R2.fastq") into (non_host_fastq,non_host_fastq_count,non_host_fastq_assembly,non_host_fastq_megares)
+        set sample_id, file("${sample_id}.non.host.R1.fastq.gz"), file("${sample_id}.non.host.R2.fastq.gz") into (non_host_fastq,non_host_fastq_count,non_host_fastq_assembly,non_host_fastq_megares)
 
     """
     bedtools  \
@@ -243,6 +241,7 @@ process BAMToFASTQ {
       -i ${bam} \
       -fq ${sample_id}.non.host.R1.fastq \
       -fq2 ${sample_id}.non.host.R2.fastq
+    gzip *.fastq
     """
 }
 
@@ -271,14 +270,14 @@ process AssembleReads {
         set sample_id, file(forward), file(reverse) from non_host_fastq_assembly
 
     output:
-        set sample_id, file("${sample_id}.contigs.fa") into (idba_assemblies,sample_contig)
+        set sample_id, file("temp/idba/${sample_id}.contigs.fasta") into (idba_assemblies,sample_contig)
 
     script:
     """
     mkdir -p temp/idba
     fq2fa --merge --filter <( zcat $forward) <( zcat $reverse ) temp/interleavened.fasta
-    idba_ud --num_threads ${params.smem_threads} -l temp/interleavened.fasta -o temp/idba
-    cp temp/idba/contig.fa ${sample_id}.contigs.fasta
+    idba_ud --num_threads ${smem_threads} -r temp/interleavened.fasta -o temp/idba
+    mv temp/idba/contig.fa ${sample_id}.contigs.fasta
     """
 }
 
@@ -298,10 +297,10 @@ process HMM_amr {
 
     script:
     """
-    nhmmer --dna --notextw --cpu ${params.threads} -E 0.0 --tblout ${sample_id}.g1.tblout.scan ${params.hmm_group1} ${contig}
-    nhmmer --dna --notextw --cpu ${params.threads} -E 0.0 --tblout ${sample_id}.g2.tblout.scan ${params.hmm_group2} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g1.tblout.scan ${hmm_group1} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g2.tblout.scan ${hmm_group2} ${contig}
     tail -n +2 ${sample_id}.g2.tblout.scan | head -n -10 > ${sample_id}.g2.scan
-    nhmmer --dna --notextw --cpu ${params.threads} -E 0.0 --tblout ${sample_id}.g3.tblout.scan ${params.hmm_group3} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g3.tblout.scan ${hmm_group3} ${contig}
     tail -n +2 ${sample_id}.g3.tblout.scan | head -n -10 > ${sample_id}.g3.scan
     cat ${sample_id}.g1.tblout.scan ${sample_id}.g2.scan ${sample_id}.g3.scan > ${sample_id}.master.scan
     """
@@ -322,7 +321,7 @@ process AlignToContigs {
 
      """
      bwa index ${contig}
-     bwa mem ${contig} ${forward} ${reverse} -t ${params.threads} > ${sample_id}.contig.alignment.sam
+     bwa mem ${contig} ${forward} ${reverse} -t ${threads} > ${sample_id}.contig.alignment.sam
      """
 }
 
@@ -347,7 +346,7 @@ process HMMcontig_count {
       file hmm_annotation
 
   output:
-      set sample_id, file("${sample_id}.group_counts.tsv") into (hmm_counts)
+      set sample_id, file("${sample_id}.hmm.group_counts.tsv") into (hmm_counts)
       set sample_id, file("${sample_id}.hmm.SNP.fastq") into (snp_reads)
 
   """
@@ -362,7 +361,7 @@ process AlignToAMR {
      publishDir "${params.output}/AlignToAMR", mode: "copy"
 
      input:
-         set sample_id, file(forward) from non_host_fastq_megares
+         set sample_id, file(forward), file(reverse) from non_host_fastq_megares
          file index from amr_index.first()
          file amr
 
@@ -370,13 +369,14 @@ process AlignToAMR {
          set sample_id, file("${sample_id}.amr.alignment.sam") into (resistome_sam, rarefaction_sam,snpfinder_sam)
          set sample_id, file("${sample_id}.amr.alignment.dedup.bam") into (resistome_bam)
      """
-     bwa mem ${amr} ${forward} -t ${params.threads} -R "${sample_id}" > ${sample_id}.amr.alignment.sam
+     bwa mem ${amr} ${forward} ${reverse} -t ${params.threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.amr.alignment.sam
      samtools view -S -b ${sample_id}.amr.alignment.sam > ${sample_id}.amr.alignment.bam
-     samtools sort ${sample_id}.amr.alignment.bam -o ${sample_id}.amr.alignment.sorted.bam
-     samtools markdup -S ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.dedup.bam
+     samtools sort -n ${sample_id}.amr.alignment.bam -o ${sample_id}.amr.alignment.sorted.bam
+     samtools fixmate -m ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam
+     samtools sort ${sample_id}.amr.alignment.sorted.fix.bam -o ${sample_id}.amr.alignment.sorted.fix.sorted.bam
+     samtools markdup -S ${sample_id}.amr.alignment.sorted.fix.sorted.bam ${sample_id}.amr.alignment.dedup.bam
      rm ${sample_id}.amr.alignment.bam
-     rm ${sample_id}.amr.alignment.sorted.bam
-
+     rm ${sample_id}.amr.alignment.sorted*.bam
      """
 }
 
@@ -419,14 +419,13 @@ process RunFreebayes {
         file amr
 
     output:
-        file("${sample_id}.results.vcf") into (SNP)
+        set sample_id, file("${sample_id}.results.vcf") into (SNP)
 
     """
     freebayes \
       -f ${amr} \
       -p 1 \
-      ${bam} |
-      vcffilter -f "QUAL > 20" > ${sample_id}.results.vcf
+      ${bam} > ${sample_id}.results.vcf
     """
 }
 
@@ -521,12 +520,14 @@ process SNPAlignToAMR {
          set sample_id, file("${sample_id}.SNP.amr.alignment.dedup.bam") into (resistome_SNP_bam)
 
      """
-     bwa mem ${amr} ${forward} -t ${params.threads} -R "${sample_id}" > ${sample_id}.SNP.amr.alignment.sam
+     bwa mem ${amr} ${forward} ${reverse} -t ${params.threads} -R '@RG\\tID:${sample_id}' > ${sample_id}.SNP.amr.alignment.sam
      samtools view -S -b ${sample_id}.SNP.amr.alignment.sam > ${sample_id}.SNP.amr.alignment.bam
-     samtools sort ${sample_id}.SNP.amr.alignment.bam -o ${sample_id}.SNP.amr.alignment.sorted.bam
-     samtools markdup -S ${sample_id}.SNP.amr.alignment.sorted.bam ${sample_id}.SNP.amr.alignment.dedup.bam
-     rm ${sample_id}.amr.alignment.bam
-     rm ${sample_id}.amr.alignment.sorted.bam
+     samtools sort -n ${sample_id}.SNP.amr.alignment.bam -o ${sample_id}.SNP.amr.alignment.sorted.bam
+     samtools fixmate -m ${sample_id}.SNP.amr.alignment.sorted.bam ${sample_id}.SNP.amr.alignment.sorted.fix.bam
+     samtools sort ${sample_id}.SNP.amr.alignment.sorted.fix.bam -o ${sample_id}.SNP.amr.alignment.sorted.fix.sorted.bam
+     samtools markdup -S ${sample_id}.SNP.amr.alignment.sorted.fix.sorted.bam ${sample_id}.SNP.amr.alignment.dedup.bam
+     rm ${sample_id}.SNP.amr.alignment.bam
+     rm ${sample_id}.SNP.amr.alignment.sorted*.bam
      """
 }
 
@@ -609,32 +610,6 @@ process SNPconfirmation {
     """
 }
 
-/*
-process SNPgene_alignment{
-
-  tag { sample_id }
-
-  publishDir "${params.output}/SNPgene_alignment", mode: "copy"
-
-  input:
-      set sample_id, file(sam) from resistome_SNP_sam_confirmation
-      set sample_id, file(gene_counts) from SNP_resistome
-      file SNP_index from amr_SNP_index.first()
-      file snp_annotation
-      file amr
-
-  output:
-      file("${sample_id}.SNP.gene.tsv") into (SNP_confirmed)
-      file("${sample_id}.fasta*") into (amr_SNP_index)
-
-  """
-  #python ${snp_confirmation} ${sam} ${gene_counts} ${snp_annotation} long
-  #grep for unique gene names from confirmed counts
-  #grep genes from the AMR database and make into FASTA
-  # output is list
-  """
-}
-*/
 
 
 

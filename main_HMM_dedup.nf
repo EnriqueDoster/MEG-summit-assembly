@@ -361,7 +361,7 @@ process AlignSNPToAMR {
      publishDir "${params.output}/SNPAlignToAMR", mode: "copy"
 
      input:
-         set sample_id, file(forward), file(reverse) from snp_reads
+         set sample_id, file(forward) from snp_reads
          file index from amr_index.first()
          file amr
 
@@ -370,7 +370,7 @@ process AlignSNPToAMR {
          set sample_id, file("${sample_id}.amr.alignment.dedup.bam") into (resistome_bam)
 
      """
-     bwa mem ${amr} ${forward} ${reverse} -t ${params.threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.amr.alignment.sam
+     bwa mem ${amr} ${forward} -t ${threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.amr.alignment.sam
      samtools view -S -b ${sample_id}.amr.alignment.sam > ${sample_id}.amr.alignment.bam
      samtools sort -n ${sample_id}.amr.alignment.bam -o ${sample_id}.amr.alignment.sorted.bam
      samtools fixmate -m ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam

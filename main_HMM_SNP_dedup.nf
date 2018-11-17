@@ -587,6 +587,7 @@ process SNPRunResistome {
     """
 }
 
+/*
 process SNPconfirmation {
     tag { sample_id }
 
@@ -609,7 +610,7 @@ process SNPconfirmation {
     # output is list
     """
 }
-
+*/
 
 
 

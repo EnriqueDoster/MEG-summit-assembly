@@ -17,5 +17,7 @@ module load gnu_parallel/20160622
 module load gcc/6.1.0
 module load openmpi/2.0.1
 
-mpirun --pernode ./nextflow run main_HMM_SNP_dedup.nf -resume -profile slurm -w /scratch/summit/edoster@colostate.edu/SNP_HMM/proj7/work --threads 1 --output /scratch/summit/edoster@colostate.edu/SNP_HMM/proj7/ --host /scratch/summit/edoster@colostate.edu/HMM_steps/MEG-summit-assembly/Livestock_complete_genomes.fa --reads "/scratch/summit/edoster@colostate.edu/proj7/AFE1*_R{1,2}.fastq.gz" -with-mpi 
-
+mpirun --pernode ./nextflow run main_HMM_SNP_dedup.nf -resume -profile slurm \
+-w /scratch/summit/edoster@colostate.edu/FCmeat_results/work --threads 15 \
+--output /scratch/summit/edoster@colostate.edu/FCmeat_results --host /scratch/summit/edoster@colostate.edu/Livestock_complete_genomes.fa \
+--reads "/scratch/summit/edoster@colostate.edu/FC_meat/*_R{1,2}.fastq.gz" -with-mpi

@@ -520,7 +520,7 @@ process SNPAlignToAMR {
          set sample_id, file("${sample_id}.SNP.amr.alignment.dedup.bam") into (resistome_SNP_bam)
 
      """
-     bwa mem ${amr} ${forward} ${reverse} -t ${params.threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.SNP.amr.alignment.sam
+     bwa mem ${amr} ${forward} -t ${params.threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.SNP.amr.alignment.sam
      samtools view -S -b ${sample_id}.SNP.amr.alignment.sam > ${sample_id}.SNP.amr.alignment.bam
      samtools sort -n ${sample_id}.SNP.amr.alignment.bam -o ${sample_id}.SNP.amr.alignment.sorted.bam
      samtools fixmate -m ${sample_id}.SNP.amr.alignment.sorted.bam ${sample_id}.SNP.amr.alignment.sorted.fix.bam

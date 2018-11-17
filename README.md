@@ -13,7 +13,9 @@
 ssh user@colostate.edu@login.rc.colorado.edu
 
 ## To access Summit compile nodes:
+
 ssh scompile
+
 ## Purge and load existing modules
 module purge
 
@@ -21,20 +23,30 @@ module load jdk/1.8.0
 
 ## Navigate to directory where you want stage your scrips
 cd /scratch/summit/$USER/
-## install nextflow
-curl -s https://get.nextflow.io | bash
-## Download this repository
+
+## Download this repository, unzip HMM models, and change permissions in directory
 git clone https://github.com/EnriqueDoster/MEG-summit-assembly.git
+
 cd MEG-summit-assembly
 
+gunzip containers/data/HMM/*
+
+chmod 755 -R *
+
+## install nextflow
+curl -s https://get.nextflow.io | bash
+
+### Set up "launcher_mpi.sh" script to match your data
+# example code:
+# use the following command in a SLURM launcher script.
+mpirun --pernode ./nextflow run main_dedup.nf -w /scratch/summit/edoster@colostate.edu/HMM_steps/proj7/work --threads 1 --output /scratch/summit/edoster@colostate.edu/HMM_steps/proj7/ --host /scratch/summit/edoster@colostate.edu/HMM_steps/MEG-summit-assembly/Livestock_complete_genomes.fa --reads "/scratch/summit/edoster@colostate.edu/proj7/AFE13_R{1,2}.fastq.gz" -profile slurm -with-mpi -resume
+
+# After editing, submit the launcher_mpi.sh script using sbatch
+
+sbatch launcher_mpi.sh
 
 ### View queue
 squeue -u $USER
 ### Cancel all the jobs for a user:
 scancel -u $USER
 
-
-### Still in progress - development of nextflow script
-# main_dedup.nf
-# use the following command in a SLURM launcher script.
-mpirun --pernode ./nextflow run main_dedup.nf -w /scratch/summit/edoster@colostate.edu/HMM_steps/proj7/work --threads 1 --output /scratch/summit/edoster@colostate.edu/HMM_steps/proj7/ --host /scratch/summit/edoster@colostate.edu/HMM_steps/MEG-summit-assembly/Livestock_complete_genomes.fa --reads "/scratch/summit/edoster@colostate.edu/proj7/AFE13_R{1,2}.fastq.gz" -profile slurm -with-mpi -resume

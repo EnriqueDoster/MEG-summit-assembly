@@ -297,10 +297,10 @@ process HMM_amr {
 
     script:
     """
-    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g1.tblout.scan ${hmm_group1} ${contig}
-    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g2.tblout.scan ${hmm_group2} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g1.tblout.scan $baseDir/containers/data/HMM/${hmm_group1} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g2.tblout.scan $baseDir/containers/data/HMM/${hmm_group2} ${contig}
     tail -n +2 ${sample_id}.g2.tblout.scan | head -n -10 > ${sample_id}.g2.scan
-    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g3.tblout.scan ${hmm_group3} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g3.tblout.scan $baseDir/containers/data/HMM/${hmm_group3} ${contig}
     tail -n +2 ${sample_id}.g3.tblout.scan | head -n -10 > ${sample_id}.g3.scan
     cat ${sample_id}.g1.tblout.scan ${sample_id}.g2.scan ${sample_id}.g3.scan > ${sample_id}.master.scan
     """
@@ -350,7 +350,7 @@ process HMMcontig_count {
       set sample_id, file("${sample_id}.hmm.SNP.fastq") into (snp_reads)
 
   """
-  cat ${sam} |${hmm_analysis_script} ${hmm_annotation} ${scan} ${hmm_snp_annotation} ${sample_id}.hmm
+  cat ${sam} |$baseDir/containers/data/HMM/${hmm_analysis_script} $baseDir/containers/data/HMM/${hmm_annotation} ${scan} $baseDir/containers/data/HMM/${hmm_snp_annotation} ${sample_id}.hmm
   """
 
 }

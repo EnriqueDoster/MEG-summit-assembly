@@ -587,7 +587,7 @@ process SNPRunResistome {
     """
 }
 
-/*
+
 process SNPconfirmation {
     tag { sample_id }
 
@@ -604,13 +604,13 @@ process SNPconfirmation {
         file("${sample_id}.fasta*") into (amr_SNP_index)
 
     """
-    python $baseDir/containers/data/amr/${snp_confirmation} ${sam} ${gene_counts} ${snp_annotation} long
+    python $baseDir/containers/data/amr/${snp_confirmation} ${sam} ${gene_counts} ${snp_annotation} long ${sample_id}.long.HMM.csv	
     #grep for unique gene names from confirmed counts
     #grep genes from the AMR database and make into FASTA
     # output is list
     """
 }
-*/
+
 
 
 

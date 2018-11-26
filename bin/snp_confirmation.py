@@ -5,20 +5,20 @@ import os
 import sys
 import re
 
-## USAGE:python snp_confirmation.py S1.sam amr_analytic_matrix.csv snp_metadata_example.csv indel_count.csv long long_HMM.tsv
+## USAGE:python snp_confirmation.py S1.sam amr_analytic_matrix.csv snp_metadata_example.csv indel_count.csv long long_HMM.csv
 
-def header_collect(amr_matrix, snp_metadata):
+def header_collect(long_file, snp_metadata):
     """This method reads in the headers from a given AMR_matrix and a SNP_metadata file and
     pulls out the common headers between the two along with the info associated with the gene"""
     matrix_headers = {}
     snp_headers = {}
     temp_list = []
-    with open(amr_matrix, 'r') as csvfile:  # pulls the headers from the AMR_matrix, delimiting by comma
+    with open(long_file, 'r') as csvfile:  # pulls the headers from the AMR_matrix, delimiting by comma
         reader = csv.reader(csvfile, delimiter=',')
         csvfile.readline()
         for row in reader:
             if row != []:
-                matrix_headers[row[0]] = ''
+                matrix_headers[row[1]] = ''
     csvfile.close()
     with open(snp_metadata, 'r') as csvfile: # pulls the headers from the SNP_metadata, delimiting by comma
         reader = csv.reader(csvfile, delimiter=',')
@@ -26,98 +26,75 @@ def header_collect(amr_matrix, snp_metadata):
         for row in reader:
             if row != []:
                 if matrix_headers.__contains__(row[0]):  # pulls out the headers if they are contained in the AMR_matrix
-                    temp_list.append([row[2], row[3], row[4], row[5], row[10]]) # pulls out start/stop index & wild/mutant type amino acid & sequence
-                    snp_headers[row[0]] = temp_list
+                    snp_headers[row[0]] = []
+        csvfile.seek(0)
+        for gene in snp_headers:
+            for row in reader:
+                if row != []:
+                    if gene == row[0]:
+                        temp_list.append([row[2], row[3], row[4], row[5], row[10]])
+            snp_headers[gene] = temp_list
+            temp_list = []
+            csvfile.seek(0)
     csvfile.close()
     return snp_headers
 
 
-def count_table_zero(amr_matrix, snp_metadata):
-    """This method sets the count table to zero"""
-    sample = os.path.splitext(os.path.basename(sys.argv[1]))
-    snp_headers = {}
-    with open(snp_metadata, 'r') as csvfile:  # pulls the headers from the SNP_metadata, delimiting by comma
-        reader = csv.reader(csvfile, delimiter=',')
-        csvfile.readline()
-        for row in reader:
-            if row != []:
-                    snp_headers[row[0]] = ''
-    csvfile.close()
-
-    new_rows = []
-    with open(amr_matrix, 'r') as read_csvfile:  # pulls the headers from the AMR_matrix, delimiting by comma
-        reader = csv.reader(read_csvfile, delimiter=',')
-        row1 = next(reader)
-        column_no = (row1.index(sample[0])) + 1
-        new_rows.append(row1)
-        for row in reader:
-            if row != []:
-                if snp_headers.__contains__(row[0]):  # subtracts count if the header is present SNP_metadata
-                    row[column_no] = int(row[column_no])
-                    row[column_no] = 0
-                new_rows.append(row)
-    with open(amr_matrix, 'w', newline='') as write_csvfile:
-        edit = csv.writer(write_csvfile, delimiter=',')
-        edit.writerows(new_rows)
-    read_csvfile.close()
-    write_csvfile.close()
-
-
-def long_table_create(amr_matrix):
-    """This method creates the necessary long table if the flag is given"""
-    new_rows = []
-    with open(amr_matrix, 'r') as read_csvfile:
-        reader = csv.reader(read_csvfile, delimiter=',')
-        row0 = ['Sample', 'Gene', 'Hits', 'Gene Fraction']
-        new_rows.append(row0)
-        row1 = next(reader)
-        for column in range(len(row1) - 1):
-            num = column + 1
-            read_csvfile.seek(0)
-            read_csvfile.readline()
-            for row in reader:
-                row = [row1[column], row[0], row[num], 99]
-                new_rows.append(row)
-
-    with open(sys.argv[6], 'w', newline='') as write_tsvfile:
-        edit = csv.writer(write_tsvfile, delimiter='\t')
-        edit.writerows(new_rows)
-    write_tsvfile.close()
-    read_csvfile.close()
-
-
 def indel_count_create(output_file, indel_counts):
     """This method creates the necessary indel count table"""
-    new_rows = []
-    sample = os.path.splitext(os.path.basename(sys.argv[1]))
-    indel_counts.insert(0, sample[0])
     try:
         #add given sample's indel counts since the file exists
         read_indelfile = open(output_file)
         read_indelfile.close()
-        line_already_there = False
-        new_indel = [str(i) for i in indel_counts]
-        with open(output_file, 'r', newline='') as read_indelfile:
-            reader = csv.reader(read_indelfile, delimiter=',')
-            for row in reader:
-                if row == new_indel:
-                    line_already_there = True
-                    break
-        read_indelfile.close()
-        if line_already_there == False:
-            with open(output_file, 'a', newline='') as append_indelfile:
-                appender = csv.writer(append_indelfile, delimiter=',')
-                appender.writerow(indel_counts)
-            append_indelfile.close()
+        with open(output_file, 'a', newline='') as append_indelfile:
+            appender = csv.writer(append_indelfile, delimiter=',')
+            for row in indel_counts:
+                appender.writerow(row)
+        append_indelfile.close()
     except IOError:
         #create indel count table from scratch
-        indel_labels = [" ", "indel_no_snp_yes", "indel_no_snp_no", "indel_yes"]
-        new_rows.append(indel_labels)
-        new_rows.append(indel_counts)
+        indel_header = ['Sample', 'Gene', 'indel_no_snp_yes', 'indel_no_snp_no', 'indel_yes']
         with open(output_file, 'w', newline='') as write_indelfile:
             edit = csv.writer(write_indelfile, delimiter=',')
-            edit.writerows(new_rows)
+            edit.writerow(indel_header)
+            for row in indel_counts:
+                edit.writerow(row)
         write_indelfile.close()
+
+
+def long_table_zero(long_file, new_long_file, indel_counts):
+    """This method sets the appropriate counts to zero"""
+    copy = []
+    with open(long_file, 'r', newline='') as long_file:
+        reader = csv.reader(long_file, delimiter=',')
+        for row in reader:
+            copy.append(row)
+    long_file.close()
+
+    for row in indel_counts:
+        if row[2] == 0:
+            for element in copy:
+                if element[1] == row[1]:
+                    element[2] = 0
+
+    with open(new_long_file, 'w', newline='') as new_long_file:
+        writer = csv.writer(new_long_file, delimiter=',')
+        for row in copy:
+            writer.writerow(row)
+    new_long_file.close()
+
+
+def get_sample_name(long_file):
+    """Get the sample name for later use"""
+    with open(long_file, 'r', newline='') as long_file:
+        reader = csv.reader(long_file, delimiter=',')
+        long_file.readline()
+        for row in reader:
+            if row[0] != []:
+                sample_name = row[0]
+                break
+    long_file.close()
+    return sample_name
 
 
 def start_stop_to_one_based(dictionary):
@@ -287,11 +264,9 @@ class SamParser:
 
 if __name__ == '__main__':
     S = SamParser(sys.argv[1])
-    snp_data = header_collect(sys.argv[2], sys.argv[3])  # call the method above with command line arguments
+    snp_data = header_collect(sys.argv[2], sys.argv[3])  # dictionary containing the snp_data
     snp_data = start_stop_to_one_based(snp_data)
-    snp_overlap = False
-    indel_counts = [0, 0, 0]
-    flag = str(sys.argv[5])
+    final_indel = []
     set()
     values = S.next()
     while values:
@@ -301,86 +276,70 @@ if __name__ == '__main__':
             cigar_str = cigar_str_list(cigar_list)
             read_length = cigar_count(cigar_str, cigar_int)
             for x in snp_data:
-                for y in range(0, len(snp_data[x])):
-                    start_index_both = int(values[2])
-                    stop_index_both = int(values[2]) + read_length
-                    start_snp = snp_data[x][y][0]
-                    stop_snp = snp_data[x][y][1]
+                if x == values[1]:
+                    indel_counts = [0, 0, 0]
+                    for y in range(0, len(snp_data[x])):
+                        start_index_both = int(values[2])
+                        stop_index_both = int(values[2]) + read_length
+                        start_snp = snp_data[x][y][0]
+                        stop_snp = snp_data[x][y][1]
 
-                    if (start_index_both <= start_snp) and (stop_index_both >= stop_snp):
-                        snp_overlap = True
+                        if (start_index_both <= start_snp) and (stop_index_both >= stop_snp):
+                            data_base = list(snp_data[x][y][4][start_index_both:stop_index_both])
+                            read = list(values[4])
 
-                        data_base = list(snp_data[x][y][4][start_index_both:stop_index_both])
-                        read = list(values[4])
+                            data_base = cig_edit_data_base(data_base, cigar_str, cigar_int)
+                            read = cig_edit_read(read, cigar_str, cigar_int)
 
-                        data_base = cig_edit_data_base(data_base, cigar_str, cigar_int)
-                        read = cig_edit_read(read, cigar_str, cigar_int)
+                            indel_present = False
 
-                        indel_present = False
+                            for base in range((start_snp-start_index_both)+(stop_snp-start_snp)):
+                                if (data_base[base] == '') or (read[base] == ''):
+                                    indel_present = True
+                                    #indel yes
+                                    indel_counts[2] += 1
+                                    break
 
-                        for base in range((start_snp-start_index_both)+(stop_snp-start_snp)):
-                            if (data_base[base] == '') or (read[base] == ''):
-                                indel_present = True
-                                #indel yes
-                                indel_counts[2] += 1
-                                break
+                            if indel_present == True:
+                                continue
 
-                        if indel_present == True:
+                            data_base_snp = data_base[(start_snp-start_index_both):(start_snp-start_index_both)+(stop_snp-start_snp)]
+                            read_snp = read[(start_snp-start_index_both):(start_snp-start_index_both)+(stop_snp-start_snp)]
+
+                            if data_base_snp != read_snp:
+                                if str(protein_identifier(read_snp)) == str(snp_data[x][y][2]):
+                                    #indel no snp no
+                                    indel_counts[1] += 1
+                                else:
+                                    #indel no snp yes
+                                    indel_counts[0] += 1
+                            else:
+                                #indel no snp no
+                                indel_counts[1] += 1
+
+                    one_same = False
+                    if indel_counts != [0, 0, 0]:
+                        indel_counts.insert(0, x)
+                        if final_indel == []:
+                            final_indel.append(indel_counts)
                             continue
+                        else:
+                            for entry in final_indel:
+                                if entry[0] == indel_counts[0]:
+                                    one_same = True
+                                    for element in range(1, len(indel_counts)):
+                                        entry[element] += indel_counts[element]
+                                    break
 
-                        data_base_snp = data_base[(start_snp-start_index_both):(start_snp-start_index_both)+(stop_snp-start_snp)]
-                        read_snp = read[(start_snp-start_index_both):(start_snp-start_index_both)+(stop_snp-start_snp)]
-
-                        for z in range(0, (snp_data[x][y][1]-snp_data[x][y][0])):
-                            if data_base_snp[z] == 'A':
-                                if read_snp[z] != 'A':
-                                    if str(protein_identifier(read_snp)) == str(snp_data[x][y][2]):
-                                        #indel no snp no
-                                        indel_counts[1] += 1
-                                        break
-                                    else:
-                                        #indel no snp yes
-                                        indel_counts[0] += 1
-                                        break
-                            elif data_base_snp[z] == 'T':
-                                if read_snp[z] != 'T':
-                                    if str(protein_identifier(read_snp)) == str(snp_data[x][y][2]):
-                                        #indel no snp no
-                                        indel_counts[1] += 1
-                                        break
-                                    else:
-                                        #indel no snp yes
-                                        indel_counts[0] += 1
-                                        break
-                            elif data_base_snp[z] == 'G':
-                                if read_snp[z] != 'G':
-                                    if str(protein_identifier(read_snp)) == str(snp_data[x][y][2]):
-                                        #indel no snp no
-                                        indel_counts[1] += 1
-                                        break
-                                    else:
-                                        #indel no snp yes
-                                        indel_counts[0] += 1
-                                        break
-                            elif data_base_snp[z] == 'C':
-                                if read_snp[z] != 'C':
-                                    if str(protein_identifier(read_snp)) == str(snp_data[x][y][2]):
-                                        #indel no snp no
-                                        indel_counts[1] += 1
-                                        break
-                                    else:
-                                        #indel no snp yes
-                                        indel_counts[0] += 1
-                                        break
+                        if one_same == False:
+                            final_indel.append(indel_counts)
 
         try:
             values = S.next()
         except StopIteration:
-            if (snp_overlap == False) or (indel_counts[0] == 0):
-                count_table_zero(sys.argv[2], sys.argv[3])
+            sample_name = get_sample_name(sys.argv[2])
+            for entry in final_indel:
+                entry.insert(0, sample_name)
+            indel_count_create(sys.argv[4], final_indel)
+            long_table_zero(sys.argv[2], sys.argv[5], final_indel)
             break
-
-    indel_count_create(sys.argv[4], indel_counts)
-
-    if flag == 'long':
-        long_table_create(sys.argv[2])

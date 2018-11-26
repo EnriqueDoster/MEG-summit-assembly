@@ -90,7 +90,7 @@ process RunQC {
         file("${sample_id}.trimmomatic.stats.log") into (trimmomatic_stats)
 
     """
-    /usr/lib/jvm/java-7-openjdk-amd64/bin/java -jar ${TRIMMOMATIC}/trimmomatic-0.36.jar \
+    ${JAVA} -jar ${TRIMMOMATIC}/trimmomatic-0.36.jar \
       PE \
       -threads ${threads} \
       $forward $reverse -baseout ${sample_id} \
@@ -159,7 +159,7 @@ process DedupReads {
         set sample_id, file("${sample_id}.dd.R1.fastq"), file("${sample_id}.dd.R2.fastq") into (dedup_reads)
 
     """
-    /usr/lib/jvm/java-7-openjdk-amd64/bin/java -ea -cp /usr/local/bbmap/current/ clump.Clumpify in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t
+    ${CLUMPIFY} in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t
     """
 }
 

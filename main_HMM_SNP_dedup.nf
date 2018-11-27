@@ -270,14 +270,14 @@ process AssembleReads {
         set sample_id, file(forward), file(reverse) from non_host_fastq_assembly
 
     output:
-        set sample_id, file("temp/idba/${sample_id}.contigs.fasta") into (idba_assemblies,sample_contig)
+        set sample_id, file("${sample_id}.contigs.fasta") into (idba_assemblies,sample_contig)
 
     script:
     """
     mkdir -p temp/idba
     fq2fa --merge --filter <( zcat $forward) <( zcat $reverse ) temp/interleavened.fasta
     idba_ud --num_threads ${smem_threads} -r temp/interleavened.fasta -o temp/idba
-    mv temp/idba/contig.fa temp/idba/${sample_id}.contigs.fasta
+    mv temp/idba/contig.fa ${sample_id}.contigs.fasta
     """
 }
 

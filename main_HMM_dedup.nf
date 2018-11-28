@@ -159,7 +159,7 @@ process DedupReads {
         set sample_id, file("${sample_id}.dd.R1.fastq"), file("${sample_id}.dd.R2.fastq") into (dedup_reads)
 
     """
-    ${CLUMPIFY} in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t
+    clumpify.sh in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t
     """
 }
 
@@ -366,16 +366,16 @@ process AlignSNPToAMR {
          file amr
 
      output:
-         set sample_id, file("${sample_id}.amr.alignment.sam") into (resistome_sam, rarefaction_sam, snp_sam)
+         set sample_id, file("${sample_id}.amr.alignment.sam") into (resistome_sam, rarefaction_sam, snp_sam , snp_sam_confirm)
          set sample_id, file("${sample_id}.amr.alignment.dedup.bam") into (resistome_bam)
 
      """
      bwa mem ${amr} ${forward} -t ${threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.amr.alignment.sam
      samtools view -S -b ${sample_id}.amr.alignment.sam > ${sample_id}.amr.alignment.bam
      samtools sort -n ${sample_id}.amr.alignment.bam -o ${sample_id}.amr.alignment.sorted.bam
-     samtools fixmate -m ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam
+     samtools fixmate ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam
      samtools sort ${sample_id}.amr.alignment.sorted.fix.bam -o ${sample_id}.amr.alignment.sorted.fix.sorted.bam
-     samtools markdup -S ${sample_id}.amr.alignment.sorted.fix.sorted.bam ${sample_id}.amr.alignment.dedup.bam
+     samtools rmdup -S ${sample_id}.amr.alignment.sorted.fix.sorted.bam ${sample_id}.amr.alignment.dedup.bam
      rm ${sample_id}.amr.alignment.bam
      rm ${sample_id}.amr.alignment.sorted*.bam
      """
@@ -392,7 +392,7 @@ process RunResistome {
         file amr
 
     output:
-        file("${sample_id}.gene.tsv") into (resistome)
+        file("${sample_id}.gene.tsv") into (resistome, SNP_confirm_long)
 
     """
     resistome -ref_fp ${amr} \
@@ -476,26 +476,12 @@ process RunSNPFinder {
     """
 }
 
-
-
-
-
-/* Next steps needed:
-1. Integrate Nick's code that uses ${sample_id}.gene.tsv for 1st round confirmation
-2. Next step is to subset the unique genes from the SNP confirmed counts,
-3. Make subset BWA index from megares
-4. Re-align non_host_fastq_count
-
-
-*/
-
-/* This last section has to go after SNP confirmation and include regular counts?
 resistome.toSortedList().set { amr_l_to_w }
 
 process AMRLongToWide {
     tag { }
 
-    publishDir "${params.output}/AMRLongToWide", mode: "copy"
+    publishDir "${params.output}/SNPAMRLongToWide", mode: "copy"
 
     input:
         file(resistomes) from amr_l_to_w
@@ -509,7 +495,31 @@ process AMRLongToWide {
     mv ret/AMR_analytic_matrix.csv .
     """
 }
-*/
+
+process SNPconfirmation {
+    tag { sample_id }
+
+    publishDir "${params.output}/SNPconfirmation", mode: "copy"
+
+    input:
+        set sample_id, file(sam) from snp_sam_confirm
+        file(gene_counts) from SNP_confirm_long
+        file snp_annotation
+        file amr
+
+    output:
+     /*   file("${sample_id}.long.HMM.csv") into (SNP_confirmed_long) */
+     /*   file("${sample_id}.fasta*") into (amr_SNP_index) */
+
+    """
+    #python $baseDir/bin/snp_confirmation.py ${sam} ${gene_counts} ${snp_annotation} long ${sample_id}.long.HMM.csv	
+    #grep for unique gene names from confirmed counts
+    #grep genes from the AMR database and make into FASTA
+    # output is list
+    """
+}
+
+
 
 
 

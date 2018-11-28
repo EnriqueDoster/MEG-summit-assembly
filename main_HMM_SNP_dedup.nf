@@ -372,9 +372,9 @@ process AlignToAMR {
      bwa mem ${amr} ${forward} ${reverse} -t ${params.threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.amr.alignment.sam
      samtools view -S -b ${sample_id}.amr.alignment.sam > ${sample_id}.amr.alignment.bam
      samtools sort -n ${sample_id}.amr.alignment.bam -o ${sample_id}.amr.alignment.sorted.bam
-     samtools fixmate -m ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam
+     samtools fixmate ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam
      samtools sort ${sample_id}.amr.alignment.sorted.fix.bam -o ${sample_id}.amr.alignment.sorted.fix.sorted.bam
-     samtools markdup -S ${sample_id}.amr.alignment.sorted.fix.sorted.bam ${sample_id}.amr.alignment.dedup.bam
+     samtools rmdup -S ${sample_id}.amr.alignment.sorted.fix.sorted.bam ${sample_id}.amr.alignment.dedup.bam
      rm ${sample_id}.amr.alignment.bam
      rm ${sample_id}.amr.alignment.sorted*.bam
      """
@@ -523,9 +523,9 @@ process SNPAlignToAMR {
      bwa mem ${amr} ${forward} -t ${params.threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.SNP.amr.alignment.sam
      samtools view -S -b ${sample_id}.SNP.amr.alignment.sam > ${sample_id}.SNP.amr.alignment.bam
      samtools sort -n ${sample_id}.SNP.amr.alignment.bam -o ${sample_id}.SNP.amr.alignment.sorted.bam
-     samtools fixmate -m ${sample_id}.SNP.amr.alignment.sorted.bam ${sample_id}.SNP.amr.alignment.sorted.fix.bam
+     samtools fixmate ${sample_id}.SNP.amr.alignment.sorted.bam ${sample_id}.SNP.amr.alignment.sorted.fix.bam
      samtools sort ${sample_id}.SNP.amr.alignment.sorted.fix.bam -o ${sample_id}.SNP.amr.alignment.sorted.fix.sorted.bam
-     samtools markdup -S ${sample_id}.SNP.amr.alignment.sorted.fix.sorted.bam ${sample_id}.SNP.amr.alignment.dedup.bam
+     samtools rmdup -S ${sample_id}.SNP.amr.alignment.sorted.fix.sorted.bam ${sample_id}.SNP.amr.alignment.dedup.bam
      rm ${sample_id}.SNP.amr.alignment.bam
      rm ${sample_id}.SNP.amr.alignment.sorted*.bam
      """
@@ -604,7 +604,7 @@ process SNPconfirmation {
         file("${sample_id}.fasta*") into (amr_SNP_index)
 
     """
-    python $baseDir/containers/data/amr/${snp_confirmation} ${sam} ${gene_counts} ${snp_annotation} long ${sample_id}.long.HMM.csv	
+    python $baseDir/bin/snp_confirmation.py ${sam} ${gene_counts} ${snp_annotation} long ${sample_id}.long.HMM.csv	
     #grep for unique gene names from confirmed counts
     #grep genes from the AMR database and make into FASTA
     # output is list

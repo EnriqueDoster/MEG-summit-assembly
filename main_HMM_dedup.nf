@@ -278,6 +278,7 @@ process AssembleReads {
     fq2fa --merge --filter <( zcat $forward) <( zcat $reverse ) temp/interleavened.fasta
     idba_ud --num_threads ${smem_threads} -r temp/interleavened.fasta -o temp/idba
     mv temp/idba/contig.fa ${sample_id}.contigs.fasta
+    rm -r temp/
     """
 }
 

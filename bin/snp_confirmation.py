@@ -17,6 +17,7 @@ def header_collect(long_file, snp_metadata):
         reader = csv.reader(csvfile, delimiter='\t')
         csvfile.readline()
         for row in reader:
+            #print(row)
             if row != []:
                 matrix_headers[row[1]] = ''
     csvfile.close()
@@ -24,12 +25,14 @@ def header_collect(long_file, snp_metadata):
         reader = csv.reader(csvfile, delimiter=',')
         csvfile.readline()
         for row in reader:
+            #print(row)
             if row != []:
                 if matrix_headers.__contains__(row[0]):  # pulls out the headers if they are contained in the AMR_matrix
                     snp_headers[row[0]] = []
         csvfile.seek(0)
         for gene in snp_headers:
             for row in reader:
+                #print(row)
                 if row != []:
                     if gene == row[0]:
                         temp_list.append([row[2], row[3], row[4], row[5], row[10]])
@@ -46,15 +49,17 @@ def indel_count_create(output_file, indel_counts):
         #add given sample's indel counts since the file exists
         read_indelfile = open(output_file)
         read_indelfile.close()
-        with open(output_file, 'a', newline='') as append_indelfile:
+        with open(output_file, 'a') as append_indelfile:
             appender = csv.writer(append_indelfile, delimiter=',')
+            print(indel_counts)
             for row in indel_counts:
+                print(row)
                 appender.writerow(row)
         append_indelfile.close()
     except IOError:
         #create indel count table from scratch
         indel_header = ['Sample', 'Gene', 'indel_no_snp_yes', 'indel_no_snp_no', 'indel_yes']
-        with open(output_file, 'w', newline='') as write_indelfile:
+        with open(output_file, 'wb',) as write_indelfile:
             edit = csv.writer(write_indelfile, delimiter=',')
             edit.writerow(indel_header)
             for row in indel_counts:
@@ -65,7 +70,7 @@ def indel_count_create(output_file, indel_counts):
 def long_table_zero(long_file, new_long_file, indel_counts):
     """This method sets the appropriate counts to zero"""
     copy = []
-    with open(long_file, 'r', newline='') as long_file:
+    with open(long_file, 'r') as long_file:
         reader = csv.reader(long_file, delimiter=',')
         for row in reader:
             copy.append(row)
@@ -77,7 +82,7 @@ def long_table_zero(long_file, new_long_file, indel_counts):
                 if element[1] == row[1]:
                     element[2] = 0
 
-    with open(new_long_file, 'w', newline='') as new_long_file:
+    with open(new_long_file, 'wb') as new_long_file:
         writer = csv.writer(new_long_file, delimiter=',')
         for row in copy:
             writer.writerow(row)
@@ -86,7 +91,7 @@ def long_table_zero(long_file, new_long_file, indel_counts):
 
 def get_sample_name(long_file):
     """Get the sample name for later use"""
-    with open(long_file, 'r', newline='') as long_file:
+    with open(long_file, 'r') as long_file:
         reader = csv.reader(long_file, delimiter='\t')
         long_file.readline()
         for row in reader:
@@ -270,12 +275,15 @@ if __name__ == '__main__':
     set()
     values = S.next()
     while values:
+        #print(snp_data)
+        print(values[1])
         if snp_data.__contains__(values[1]):  # checks if the dictionary contains the given header
             cigar_list = list(filter(None, re.split('(\d+)', values[3])))  # get cigar string and divide it into numbers/letters
             cigar_int = cigar_int_list(cigar_list)
             cigar_str = cigar_str_list(cigar_list)
             read_length = cigar_count(cigar_str, cigar_int)
             for x in snp_data:
+                #print(values[1])
                 if x == values[1]:
                     indel_counts = [0, 0, 0]
                     for y in range(0, len(snp_data[x])):
@@ -343,3 +351,4 @@ if __name__ == '__main__':
             indel_count_create(sys.argv[4], final_indel)
             long_table_zero(sys.argv[2], sys.argv[5], final_indel)
             break
+

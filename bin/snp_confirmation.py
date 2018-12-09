@@ -5,7 +5,7 @@ import os
 import sys
 import re
 
-## USAGE:python snp_confirmation.py S1.sam amr_analytic_matrix.csv snp_metadata_example.csv indel_count.csv long long_HMM.csv
+##  USAGE:python snp_confirmation.py S1.sam amr_analytic_matrix.csv snp_metadata_example.csv indel_count.csv long long_HMM.csv
 
 def header_collect(long_file, snp_metadata):
     """This method reads in the headers from a given AMR_matrix and a SNP_metadata file and
@@ -13,8 +13,8 @@ def header_collect(long_file, snp_metadata):
     matrix_headers = {}
     snp_headers = {}
     temp_list = []
-    with open(long_file, 'r') as csvfile:  # pulls the headers from the AMR_matrix, delimiting by comma
-        reader = csv.reader(csvfile, delimiter=',')
+    with open(long_file, 'r') as csvfile:  # pulls the headers from the AMR_matrix, delimiting by tab
+        reader = csv.reader(csvfile, delimiter='\t')
         csvfile.readline()
         for row in reader:
             if row != []:
@@ -87,7 +87,7 @@ def long_table_zero(long_file, new_long_file, indel_counts):
 def get_sample_name(long_file):
     """Get the sample name for later use"""
     with open(long_file, 'r', newline='') as long_file:
-        reader = csv.reader(long_file, delimiter=',')
+        reader = csv.reader(long_file, delimiter='\t')
         long_file.readline()
         for row in reader:
             if row[0] != []:

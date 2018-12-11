@@ -227,29 +227,7 @@ process AMRLongToWide {
     """
 }
 
-process SNPconfirmation {
-    tag { sample_id }
 
-    publishDir "${params.output}/SNPconfirmation", mode: "copy"
-
-    input:
-        set sample_id, file(sam) from snp_sam_confirm
-        file(forward) snp_reads_realign
-        file(gene_counts) from SNP_confirm_long
-        file snp_annotation
-        file amr
-
-    output:
-     /*   file("${sample_id}.long.HMM.csv") into (SNP_confirmed_long) */
-     /*   file("${sample_id}.fasta*") into (amr_SNP_index) */
-
-    """
-    #python $baseDir/bin/snp_confirmation.py ${sam} ${gene_counts} ${snp_annotation} long ${sample_id}.long.HMM.csv
-    #grep for unique gene names from confirmed counts
-    #grep genes from the AMR database and make into FASTA
-    # output is list
-    """
-}
 
 
 

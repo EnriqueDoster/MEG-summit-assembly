@@ -126,6 +126,8 @@ From: debian:jessie-slim
     cd vcflib
     make
     export PATH=$PATH:$(pwd)
+    cd scripts
+    export PATH=$PATH:$(pwd)
     cd /
     
 %test

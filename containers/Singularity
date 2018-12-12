@@ -120,6 +120,14 @@ From: debian:jessie-slim
     cp snpfinder /usr/local/bin
     cd /
     
+    # Install VCF tools
+    cd /usr/local
+    git clone --recursive git://github.com/ekg/vcflib.git
+    cd vcflib
+    make
+    export PATH=$PATH:$(pwd)
+    cd /
+    
 %test
     #which bwa
     #which bedtools

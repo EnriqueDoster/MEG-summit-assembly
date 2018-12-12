@@ -125,9 +125,7 @@ From: debian:jessie-slim
     git clone --recursive git://github.com/ekg/vcflib.git
     cd vcflib
     make
-    export PATH=$PATH:$(pwd)
-    cd scripts
-    export PATH=$PATH:$(pwd)
+    ln -s /usr/local/vcflib/bin/* /usr/local/bin/
     cd /
     
 %test

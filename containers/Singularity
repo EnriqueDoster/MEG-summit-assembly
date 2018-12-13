@@ -120,6 +120,28 @@ From: debian:jessie-slim
     cp snpfinder /usr/local/bin
     cd /
     
+    # Install VCF tools
+    cd /usr/local
+    git clone --recursive git://github.com/ekg/vcflib.git
+    cd vcflib
+    make
+    ln -s /usr/local/vcflib/bin/* /usr/local/bin/
+    cd /
+    
+    ## htslib
+    cd /usr/local/
+    HTSLIB_VERSION=1.9 # indexes versions for samtools and bcftools
+    wget https://github.com/samtools/htslib/releases/download/1.9/htslib-${HTSLIB_VERSION}.tar.bz2
+    tar xvjf htslib-${HTSLIB_VERSION}.tar.bz2
+    cd htslib-${HTSLIB_VERSION}
+    autoheader
+    autoconf -Wno-syntax
+    ./configure --prefix /usr/local/bin
+    make
+    make install
+    ln -s /usr/local/htslib-${HTSLIB_VERSION}/* /usr/local/bin/
+    cd /
+    
 %test
     #which bwa
     #which bedtools

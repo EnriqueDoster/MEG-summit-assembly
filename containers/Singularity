@@ -13,7 +13,7 @@ From: debian:jessie-slim
     python3-pip python3-docopt python3-pytest python-dev python3-dev\
     libcurl4-openssl-dev libssl-dev zlib1g-dev fonts-texgyre \
     gcc g++ gfortran libblas-dev liblapack-dev dos2unix\
-    r-base-core r-recommended hmmer\
+    r-base-core r-recommended hmmer tabix \
     && rm -rf /var/lib/apt/lists/*
 
     python3 -m pip install biopython
@@ -69,11 +69,26 @@ From: debian:jessie-slim
     ln -s /usr/local/samtools-${HTSLIB_VERSION}/* /usr/local/bin/
     cd /
 
+
+    ## htslib
+    cd /usr/local/
+    HTSLIB_VERSION=1.9 # indexes versions for samtools and bcftools
+    wget https://github.com/samtools/htslib/releases/download/1.9/htslib-${HTSLIB_VERSION}.tar.bz2
+    tar xvjf htslib-${HTSLIB_VERSION}.tar.bz2
+    cd htslib-${HTSLIB_VERSION}
+    autoheader
+    autoconf -Wno-syntax
+    ./configure --prefix /usr/local/bin
+    make
+    make install
+    ln -s /usr/local/htslib-${HTSLIB_VERSION}/* /usr/local/bin/
+    cd /
+
     # Bedtools
     cd /usr/local/
     wget https://github.com/arq5x/bedtools2/releases/download/v2.25.0/bedtools-2.25.0.tar.gz
     tar -zxvf bedtools-2.25.0.tar.gz
-    cd bedtools2
+    cd bedtools2tabix
     make
     ln -s /usr/local/bedtools2/bin/* /usr/local/bin/
     cd /

@@ -3,6 +3,8 @@ From: debian:jessie-slim
 
 #Includes idba, trimmomatic, samtools, bwa, bedtools, freebayes, bbmap, resistomeanalyzer, rarefactionanalyzer
 
+%environment
+
 %post
     ## Jave install doesn't work, but can load java module from summit
     apt update \
@@ -139,8 +141,9 @@ From: debian:jessie-slim
     ./configure --prefix /usr/local/bin
     make
     make install
-    ln -s /usr/local/htslib-${HTSLIB_VERSION}/* /usr/local/bin/
+    echo 'export PATH=$PATH:$(pwd)' >>$SINGULARITY_ENVIRONMENT
     cd /
+
     
 %test
     #which bwa

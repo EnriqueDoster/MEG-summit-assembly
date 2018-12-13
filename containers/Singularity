@@ -69,7 +69,6 @@ From: debian:jessie-slim
     ln -s /usr/local/samtools-${HTSLIB_VERSION}/* /usr/local/bin/
     cd /
 
-
     ## htslib
     cd /usr/local/
     HTSLIB_VERSION=1.9 # indexes versions for samtools and bcftools

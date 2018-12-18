@@ -144,6 +144,15 @@ From: debian:jessie-slim
     echo 'export PATH=$PATH:$(pwd)' >>$SINGULARITY_ENVIRONMENT
     cd /
 
+    # Install kraken
+    cd /usr/local
+    git clone https://github.com/DerrickWood/kraken2.git
+    cd kraken2/
+    ./install_kraken2.sh /usr/local/kraken2
+    cp /usr/local/kraken2/kraken2 /usr/local/bin
+    cp /usr/local/kraken2/kraken2-build /usr/local/bin
+    cp /usr/local/kraken2/kraken2-inspect /usr/local/bin
+    cd /
     
 %test
     #which bwa

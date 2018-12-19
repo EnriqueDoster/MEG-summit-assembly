@@ -192,12 +192,13 @@ if __name__ == '__main__':
     print(len(rev_reads),"Reverse reads")
     print(len(total_mapped_reads),"Total mapped reads")
     print(len(SNP_mapped_reads),"SNP mapped reads")
-
+    
     with open(sys.argv[4] + ".SNP.stats.tsv", 'w') as out:
-        out.write('{}\t{}\t{}\n'.format(samplename,"mapped_reads",total_mapped_reads))
-        out.write('{}\t{}\t{}\n'.format(samplename,"SNP_reads",SNP_mapped_reads))
+        out.write('{}\t{}\t{}\n'.format(samplename,"mapped_reads",len(total_mapped_reads)))
+        out.write('{}\t{}\t{}\n'.format(samplename,"SNP_reads",len(SNP_mapped_reads)))
         out.write('{}\t{}\t{}\n'.format(samplename,"SNP_contigs",SNP_contigs))
         out.write('{}\t{}\t{}\n'.format(samplename,"nonSNP_contigs",non_SNP_contigs))
+
     
     
     with open(sys.argv[4] + ".counts", 'a') as out:

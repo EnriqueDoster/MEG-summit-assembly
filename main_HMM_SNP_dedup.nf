@@ -264,7 +264,7 @@ if( !params.amr_index ) {
 process AssembleReads {
     tag { sample_id }
 
-    publishDir "${params.output}/AssembledFiles", mode: "symlink"
+    publishDir "${params.output}/AssembledFiles", mode: "copy"
 
     input:
         set sample_id, file(forward), file(reverse) from non_host_fastq_assembly
@@ -284,7 +284,7 @@ process AssembleReads {
 process HMM_amr {
     tag {sample_id}
 
-    publishDir "${params.output}/AlignToHMM", mode: "symlink"
+    publishDir "${params.output}/AlignToHMM", mode: "copy"
 
     input:
         set sample_id, file(contig) from sample_contig

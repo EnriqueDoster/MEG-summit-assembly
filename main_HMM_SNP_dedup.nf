@@ -516,7 +516,7 @@ process SNPAlignToAMR {
          file amr
 
      output:
-         set sample_id, file("${sample_id}.SNP.amr.alignment.sorted.sam") into (resistome_SNP_sam, resistome_SNP_sam_confirmation, snp_sam, rarefaction_SNP_sam)
+         set sample_id, file("${sample_id}.SNP.amr.alignment.sam") into (resistome_SNP_sam, resistome_SNP_sam_confirmation, snp_sam, rarefaction_SNP_sam)
          set sample_id, file("${sample_id}.SNP.amr.alignment.dedup.bam") into (resistome_SNP_bam)
 
      """

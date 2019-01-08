@@ -187,7 +187,10 @@ if __name__ == '__main__':
 
     print(non_SNP_contigs,"Non-SNP contigs")
     print(SNP_contigs, "SNP contigs")
-    print(SNP_contigs/non_SNP_contigs * 100 , "Percent SNP contigs")
+    if non_SNP_contigs == 0:
+        print("No non_SNP_contigs were found")
+    else:
+        print(SNP_contigs/non_SNP_contigs * 100 , "Percent SNP contigs")
     print(len(for_reads),"Forward reads")
     print(len(rev_reads),"Reverse reads")
     print(len(total_mapped_reads),"Total mapped reads")

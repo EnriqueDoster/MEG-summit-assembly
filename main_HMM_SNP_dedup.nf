@@ -159,7 +159,7 @@ process DedupReads {
         set sample_id, file("${sample_id}.dd.R1.fastq"), file("${sample_id}.dd.R2.fastq") into (dedup_reads)
 
     """
-    ${CLUMPIFY} in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t
+    ${CLUMPIFY} in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t repair=t
     """
 }
 
@@ -587,6 +587,7 @@ process SNPRunResistome {
     """
 }
 
+/*
 
 process SNPconfirmation {
     tag { sample_id }
@@ -610,11 +611,6 @@ process SNPconfirmation {
     # output is list
     """
 }
-
-
-
-
-/*
 
 process SNPRunFreebayes {
     tag { sample_id }

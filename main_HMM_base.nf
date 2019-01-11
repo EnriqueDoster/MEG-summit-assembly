@@ -159,7 +159,7 @@ process DedupReads {
         set sample_id, file("${sample_id}.dd.R1.fastq"), file("${sample_id}.dd.R2.fastq") into (dedup_reads)
 
     """
-    ${CLUMPIFY} in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t
+    ${CLUMPIFY} in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t repair=t
     """
 }
 
@@ -335,6 +335,7 @@ process HMMcontig_count {
       saveAs: { filename ->
           if(filename.indexOf("group_counts.tsv") > 0) "Counts/$filename"
           else if(filename.indexOf(".hmm.SNP.fastq") > 0) "SNP_reads/$filename"
+	  else if(filename.indexOf(".SNP.stats.tsv") > 0) "SNP_stats/$filename"
           else {}
       }
   input:

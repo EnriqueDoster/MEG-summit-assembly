@@ -1,14 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=nf_HMM
-#SBATCH --partition=smem
+#SBATCH --partition=shas
 #SBATCH --ntasks=1
 #SBATCH --qos=long
 #SBATCH --cpus-per-task=1
-#SBATCH --time=150:00:00
+#SBATCH --time=100:00:00
 #SBATCH --export=ALL
 #SBATCH --mail-user=enriquedoster@gmail.com
 #SBATCH --mail-type=ALL
-
 
 module purge
 module load jdk/1.8.0

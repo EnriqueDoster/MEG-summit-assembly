@@ -408,27 +408,6 @@ process RunResistome {
     """
 }
 
-
-process RunFreebayes {
-    tag { sample_id }
-
-    publishDir "${params.output}/SNPRunFreebayes", mode: "copy"
-
-    input:
-        set sample_id, file(bam) from resistome_bam
-        file annotation
-        file amr
-
-    output:
-        set sample_id, file("${sample_id}.results.vcf.gz") into (SNP)
-
-    """
-    freebayes -f ${amr} -p 1 ${bam} > ${sample_id}.results.vcf
-    bgzip ${sample_id}.results.vcf
-    tabix -p vcf ${sample_id}.results.vcf.gz
-    """
-}
-
 hmm_counts.toSortedList().set { amr_l_to_w }
 
 process AMRLongToWide {

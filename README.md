@@ -44,49 +44,49 @@ usually this can be done with by loading modules available to all users on a ser
 
   - Singularity - contains all bioinformatic software required for running the pipeline- https://github.com/singularityhub/singularityhub.github.io/wiki \http://singularity-hub.org/ | 
   
-  - $ module load singularity/2.5.2
+    - $ module load singularity/2.5.2
  
- - GCC compiler
+  - GCC compiler
 
-  - $ module load gcc/6.1.0
+    - $ module load gcc/6.1.0
 
- - OpenMPI
+  - OpenMPI
 
-  - $ module load openmpi/2.0.1
+    - $ module load openmpi/2.0.1
 
- - Once the repository is downloaded, I recommend going into that directory and installing nextflow (with java loaded)
+  - Once the repository is downloaded, I recommend going into that directory and installing nextflow (with java loaded)
 
-  - $ git clone https://github.com/EnriqueDoster/MEG-summit-assembly.git
+    - $ git clone https://github.com/EnriqueDoster/MEG-summit-assembly.git
 
-  - $ cd MEG-summit-assembly/
+    - $ cd MEG-summit-assembly/
 
-  - $ curl -s https://get.nextflow.io | bash
+    - $ curl -s https://get.nextflow.io | bash
 
- - Next, two housekeeping commands to unzip files and make executable
+  - Next, two housekeeping commands to unzip files and make executable
 
-  - $ gunzip containers/data/HMM/*
+    - $ gunzip containers/data/HMM/*
 
-  - $ chmod 755 -R *
+    - $ chmod 755 -R *
 
  - The "launch_mpi.sh" script must be edited.
  
-  - Edit #SBATCH options
+   - Edit #SBATCH options
 
-  - Edit last command on file to specify the following flags:
+   - Edit last command on file to specify the following flags:
  
-   - --reads | path to input fastq files
+     - --reads | path to input fastq files
 
-   - --host | path to host genome fasta
+     - --host | path to host genome fasta
 
-   - --output | output path
+     - --output | output path
 
-   - --threads | number of threads to use (cores in a node)
+     - --threads | number of threads to use (cores in a node)
 
-   - -w | path for work directory
+     - -w | path for work directory
 
-   - -profile | server configuration profiles
+     - -profile | server configuration profiles
 
-  - When choosing the locations for the output, please consider that the output directory and work directory take up the same amount of space and can overwhelm disk quotas. 
+ - When choosing the locations for the output, please consider that the output directory and work directory take up the same amount of space and can overwhelm disk quotas. 
 
    - For a metagenomic sample with paired reads (7GB), we estimate 93GB of output to be stored and 93GB of temporary files (total 186 GB/sample).
 
@@ -121,7 +121,8 @@ usually this can be done with by loading modules available to all users on a ser
     - Fortunately, nextflow allows the use of the "-resume" flag (included by default) to pick up where it left off. 
 
     - $ sbatch launch_mpi.sh
-   - Run times are highly variable, but on a server running 24 threads it could take up 14 hours per sample (3GB zipped paired fastq) when running the longest pipeline "main_HMM_SNP_dedup.nf". The "maxForks" flag in the config/slurm.config file is your friend. The "main_HMM_base.nf" is the most streamlined version that only includes the amrplusplus version with HMMs (instead of bwa alignment).
+ 
+ - Run times are highly variable, but on a server running 24 threads it could take up 14 hours per sample (3GB zipped paired fastq) when running the longest pipeline "main_HMM_SNP_dedup.nf". The "maxForks" flag in the config/slurm.config file is your friend. The "main_HMM_base.nf" is the most streamlined version that only includes the amrplusplus version with HMMs (instead of bwa alignment).
 
    - Once the run is completed, you should get an email and can verify by viewing the ".nextflow.log" file
 

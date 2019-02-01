@@ -317,7 +317,7 @@ process AlignToAMR {
 
      output:
          set sample_id, file("${sample_id}.amr.alignment.sam") into (megares_resistome_sam, megares_rarefaction_sam, megares_snp_sam , megares_snp_sam_confirm)
-         set sample_id, file("${sample_id}.amr.alignment.dedup.bam") into (megares_resistome_bam)
+         set sample_id, file("${sample_id}.amr.alignment.dedup.sam") into (megares_dedup_resistome_sam)
 
      """
      bwa mem ${amr} ${forward} -t ${threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.amr.alignment.sam
@@ -326,6 +326,7 @@ process AlignToAMR {
      samtools fixmate ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam
      samtools sort ${sample_id}.amr.alignment.sorted.fix.bam -o ${sample_id}.amr.alignment.sorted.fix.sorted.bam
      samtools rmdup -S ${sample_id}.amr.alignment.sorted.fix.sorted.bam ${sample_id}.amr.alignment.dedup.bam
+     samtools view -h -o ${sample_id}.amr.alignment.dedup.bam ${sample_id}.amr.alignment.dedup.sam
      rm ${sample_id}.amr.alignment.bam
      rm ${sample_id}.amr.alignment.sorted*.bam
      """
@@ -373,6 +374,53 @@ process AMRLongToWide {
     mkdir ret
     python3 $baseDir/bin/amr_long_to_wide.py -i ${resistomes} -o ret
     mv ret/AMR_analytic_matrix.csv .
+    """
+}
+
+
+/* samtools rmdup test */
+process SamDedupRunResistome {
+    tag { sample_id }
+
+    publishDir "${params.output}/SamDedupRunResistome", mode: "copy"
+
+    input:
+        set sample_id, file(sam) from megares_dedup_resistome_sam
+        file annotation
+        file amr
+
+    output:
+        file("${sample_id}.gene.tsv") into (megares_dedup_resistome_counts)
+
+    """
+    resistome -ref_fp ${amr} \
+      -annot_fp ${annotation} \
+      -sam_fp ${sam} \
+      -gene_fp ${sample_id}.gene.tsv \
+      -group_fp ${sample_id}.group.tsv \
+      -class_fp ${sample_id}.class.tsv \
+      -mech_fp ${sample_id}.mechanism.tsv \
+      -t ${threshold}
+    """
+}
+
+megares_dedup_resistome_counts.toSortedList().set { megares_dedup_amr_l_to_w }
+
+process SamDedupAMRLongToWide {
+    tag { }
+
+    publishDir "${params.output}/SamDedup_AMRLongToWide", mode: "copy"
+
+    input:
+        file(resistomes) from megares_dedup_amr_l_to_w
+
+    output:
+        file("AMR_analytic_matrix.csv") into megares_dedup_amr_master_matrix
+
+    """
+    mkdir ret
+    python3 $baseDir/bin/amr_long_to_wide.py -i ${resistomes} -o ret
+    mv ret/AMR_analytic_matrix.csv SamDedup_AMR_analytic_matrix.csv
     """
 }
 

@@ -442,7 +442,7 @@ process AlignToContigs {
      publishDir "${params.output}/AlignToContigs", mode: "copy"
 
      input:
-         set sample_id, file(forward), file(reverse) non_host_fastq_nodedup
+         set sample_id, file(forward), file(reverse) from non_host_fastq_nodedup
          set sample_id, file(contig) from idba_assemblies
          file amr
 

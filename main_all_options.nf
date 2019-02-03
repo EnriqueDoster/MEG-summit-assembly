@@ -494,7 +494,7 @@ process HMMAMRLongToWide {
         file(hmm_counts) from hmm_amr_l_to_w
 
     output:
-        file("NonSNP_HMM_AMR_analytic_matrix.csv") into amr_master_matrix
+        file("NonSNP_HMM_AMR_analytic_matrix.csv") into hmm_amr_master_matrix
 
     """
     mkdir ret

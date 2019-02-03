@@ -326,7 +326,7 @@ process AlignToAMR {
      samtools fixmate ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam
      samtools sort ${sample_id}.amr.alignment.sorted.fix.bam -o ${sample_id}.amr.alignment.sorted.fix.sorted.bam
      samtools rmdup -S ${sample_id}.amr.alignment.sorted.fix.sorted.bam ${sample_id}.amr.alignment.dedup.bam
-     samtools view -h -o ${sample_id}.amr.alignment.dedup.bam ${sample_id}.amr.alignment.dedup.sam
+     samtools view -h -o ${sample_id}.amr.alignment.dedup.sam ${sample_id}.amr.alignment.dedup.bam
      rm ${sample_id}.amr.alignment.bam
      rm ${sample_id}.amr.alignment.sorted*.bam
      """

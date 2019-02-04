@@ -555,7 +555,7 @@ process Samtools_dedup_HMMcontig_count {
 
 samtools_dedup_hmm_counts.toSortedList().set { samtools_dedup_hmm_amr_l_to_w }
 
-process HMMAMRLongToWide {
+process Samtools_dedup_HMMAMRLongToWide {
     tag { }
 
     publishDir "${params.output}/Samtools_dedup_HMM_AMRLongToWide", mode: "copy"

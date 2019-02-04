@@ -478,8 +478,8 @@ process HMMcontig_count {
           else {}
       }
   input:
-      set sample_id, file(sam) from samtools_dedup_contig_sam
-      set sample_id, file(scan) from samtools_dedup_hmm_scan
+      set sample_id, file(sam) from contig_sam
+      set sample_id, file(scan) from hmm_scan
 
       file hmm_analysis_script
       file hmm_snp_annotation
@@ -537,8 +537,8 @@ process Samtools_dedup_HMMcontig_count {
           else {}
       }
   input:
-      set sample_id, file(sam) from contig_sam
-      set sample_id, file(scan) from hmm_scan
+      set sample_id, file(sam) from samtools_dedup_contig_sam
+      set sample_id, file(scan) from samtools_dedup_hmm_scan
 
       file hmm_analysis_script
       file hmm_snp_annotation
@@ -564,7 +564,7 @@ process Samtools_dedup_HMMAMRLongToWide {
         file(hmm_counts) from samtools_dedup_hmm_amr_l_to_w
 
     output:
-        file("Samtools_dedup_HMM_AMR_analytic_matrix.csv") into hmm_amr_master_matrix
+        file("Samtools_dedup_HMM_AMR_analytic_matrix.csv") into samtools_dedup_hmm_amr_master_matrix
 
     """
     mkdir ret

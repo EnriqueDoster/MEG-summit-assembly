@@ -415,7 +415,7 @@ process SamDedupAMRLongToWide {
         file(resistomes) from megares_dedup_amr_l_to_w
 
     output:
-        file("AMR_analytic_matrix.csv") into megares_dedup_amr_master_matrix
+        file("SamDedup_AMR_analytic_matrix.csv") into megares_dedup_amr_master_matrix
 
     """
     mkdir ret

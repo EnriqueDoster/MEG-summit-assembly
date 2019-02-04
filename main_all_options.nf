@@ -281,7 +281,7 @@ process HMM_amr {
         file hmm_group3
 
     output:
-        set sample_id, file("${sample_id}.master.scan") into (hmm_scan_dedup, hmm_scan)
+        set sample_id, file("${sample_id}.master.scan") into (hmm_scan_dedup, hmm_scan, samtools_dedup_hmm_scan)
 
     script:
     """
@@ -448,10 +448,21 @@ process AlignToContigs {
 
      output:
          set sample_id, file("${sample_id}.contig.alignment.sam") into (contig_sam)
+         set sample_id, file("${sample_id}.contig.alignment.dedup.sam") into (samtools_dedup_contig_sam)
+
 
      """
      bwa index ${contig}
      bwa mem ${contig} ${forward} ${reverse} -t ${threads} > ${sample_id}.contig.alignment.sam
+     samtools view -S -b ${sample_id}.contig.alignment.sam > ${sample_id}.contig.alignment.bam
+     samtools sort -n ${sample_id}.contig.alignment.bam -o ${sample_id}.contig.alignment.sorted.bam
+     samtools fixmate ${sample_id}.contig.alignment.sorted.bam ${sample_id}.contig.alignment.sorted.fix.bam
+     samtools sort ${sample_id}.contig.alignment.sorted.fix.bam -o ${sample_id}.contig.alignment.sorted.fix.sorted.bam
+     samtools rmdup -S ${sample_id}.contig.alignment.sorted.fix.sorted.bam ${sample_id}.contig.alignment.dedup.bam
+     samtools view -h -o ${sample_id}.contig.alignment.dedup.sam ${sample_id}.contig.alignment.dedup.bam
+     rm ${sample_id}.contig.alignment.bam
+     rm ${sample_id}.contig.alignment.sorted*.bam
+
      """
 }
 
@@ -467,8 +478,8 @@ process HMMcontig_count {
           else {}
       }
   input:
-      set sample_id, file(sam) from contig_sam
-      set sample_id, file(scan) from hmm_scan
+      set sample_id, file(sam) from samtools_dedup_contig_sam
+      set sample_id, file(scan) from samtools_dedup_hmm_scan
 
       file hmm_analysis_script
       file hmm_snp_annotation
@@ -505,6 +516,63 @@ process HMMAMRLongToWide {
 
 
 
+/*
+-
+--
+---
+----Deduped reads with samtools aligned to contigs for HMM counting
+---
+--
+-
+*/
+
+process Samtools_dedup_HMMcontig_count {
+  tag { sample_id }
+
+  publishDir "${params.output}/Samtools_dedup_HMM_counts", mode: "copy",
+      saveAs: { filename ->
+          if(filename.indexOf("group_counts.tsv") > 0) "Counts/$filename"
+          else if(filename.indexOf(".hmm.SNP.fastq") > 0) "SNP_reads/$filename"
+	  else if(filename.indexOf(".SNP.stats.tsv") > 0) "SNP_stats/$filename"
+          else {}
+      }
+  input:
+      set sample_id, file(sam) from contig_sam
+      set sample_id, file(scan) from hmm_scan
+
+      file hmm_analysis_script
+      file hmm_snp_annotation
+      file hmm_annotation
+
+  output:
+      set sample_id, file("${sample_id}.hmm.group_counts.tsv") into (samtools_dedup_hmm_counts)
+      set sample_id, file("${sample_id}.hmm.SNP.fastq") into (samtools_dedup_snp_reads, samtools_dedup_snp_reads_realign)
+
+  """
+  cat ${sam} |$baseDir/containers/data/HMM/${hmm_analysis_script} $baseDir/containers/data/HMM/${hmm_annotation} ${scan} $baseDir/containers/data/HMM/${hmm_snp_annotation} ${sample_id}.hmm
+  """
+}
+
+samtools_dedup_hmm_counts.toSortedList().set { samtools_dedup_hmm_amr_l_to_w }
+
+process HMMAMRLongToWide {
+    tag { }
+
+    publishDir "${params.output}/Samtools_dedup_HMM_AMRLongToWide", mode: "copy"
+
+    input:
+        file(hmm_counts) from samtools_dedup_hmm_amr_l_to_w
+
+    output:
+        file("Samtools_dedup_HMM_AMR_analytic_matrix.csv") into hmm_amr_master_matrix
+
+    """
+    mkdir ret
+    python3 $baseDir/bin/amr_long_to_wide.py -i ${hmm_counts} -o ret
+    mv ret/AMR_analytic_matrix.csv Samtools_dedup_HMM_AMR_analytic_matrix.csv
+    """
+}
+
 
 /*
 -
@@ -528,7 +596,7 @@ process DedupReads {
         set sample_id, file("${sample_id}.dd.R1.fastq"), file("${sample_id}.dd.R2.fastq") into (dedup_reads)
 
     """
-    ${CLUMPIFY} in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t deletetemp=t
+    ${CLUMPIFY} in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t deletetemp=t minid=1.0
     """
 }
 

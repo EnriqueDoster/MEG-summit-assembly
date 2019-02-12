@@ -158,10 +158,12 @@ process AlignReadsToHost {
         file host
 
     output:
-        set sample_id, file("${sample_id}.host.sam") into (host_sam)
+        set sample_id, file("${sample_id}.host.sorted.bam") into (host_bam)
 
     """
     bwa mem ${host} ${forward} ${reverse} -t ${threads} > ${sample_id}.host.sam
+    samtools view -bS ${sample_id}.host.sam | samtools sort -@ ${threads} -o ${sample_id}.host.sorted.bam
+    rm *.sam
     """
 }
 
@@ -174,16 +176,15 @@ process RemoveHostDNA {
         }
 
     input:
-        set sample_id, file(sam) from host_sam
+        set sample_id, file(bam) from host_bam
 
     output:
         set sample_id, file("${sample_id}.host.sorted.removed.bam") into (non_host_bam)
         file("${sample_id}.samtools.idxstats") into (idxstats_logs)
 
     """
-    samtools view -bS ${sam} | samtools sort -@ ${threads} -o ${sample_id}.host.sorted.bam
-    samtools index ${sample_id}.host.sorted.bam && samtools idxstats ${sample_id}.host.sorted.bam > ${sample_id}.samtools.idxstats
-    samtools view -h -f 4 -b ${sample_id}.host.sorted.bam -o ${sample_id}.host.sorted.removed.bam
+    samtools index ${bam} && samtools idxstats ${bam} > ${sample_id}.samtools.idxstats
+    samtools view -h -f 4 -b ${bam} -o ${sample_id}.host.sorted.removed.bam
     """
 }
 
@@ -285,10 +286,10 @@ process HMM_amr {
 
     script:
     """
-    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g1.tblout.scan $baseDir/containers/data/HMM/${hmm_group1} ${contig}
-    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g2.tblout.scan $baseDir/containers/data/HMM/${hmm_group2} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 1 --tblout ${sample_id}.g1.tblout.scan $baseDir/containers/data/HMM/${hmm_group1} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 1 --tblout ${sample_id}.g2.tblout.scan $baseDir/containers/data/HMM/${hmm_group2} ${contig}
     tail -n +2 ${sample_id}.g2.tblout.scan | head -n -10 > ${sample_id}.g2.scan
-    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g3.tblout.scan $baseDir/containers/data/HMM/${hmm_group3} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 1 --tblout ${sample_id}.g3.tblout.scan $baseDir/containers/data/HMM/${hmm_group3} ${contig}
     tail -n +2 ${sample_id}.g3.tblout.scan | head -n -10 > ${sample_id}.g3.scan
     cat ${sample_id}.g1.tblout.scan ${sample_id}.g2.scan ${sample_id}.g3.scan > ${sample_id}.master.scan
     """
@@ -311,7 +312,7 @@ process AlignToAMR {
      publishDir "${params.output}/AlignToAMR", mode: "copy"
 
      input:
-         set sample_id, file(forward) from non_host_fastq_megares
+         set sample_id, file(forward), file(reverse) from non_host_fastq_megares
          file index from amr_index.first()
          file amr
 
@@ -320,7 +321,7 @@ process AlignToAMR {
          set sample_id, file("${sample_id}.amr.alignment.dedup.sam") into (megares_dedup_resistome_sam)
 
      """
-     bwa mem ${amr} ${forward} -t ${threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.amr.alignment.sam
+     bwa mem ${amr} ${forward} ${reverse} -t ${threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.amr.alignment.sam
      samtools view -S -b ${sample_id}.amr.alignment.sam > ${sample_id}.amr.alignment.bam
      samtools sort -n ${sample_id}.amr.alignment.bam -o ${sample_id}.amr.alignment.sorted.bam
      samtools fixmate ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam

@@ -158,10 +158,12 @@ process AlignReadsToHost {
         file host
 
     output:
-        set sample_id, file("${sample_id}.host.sam") into (host_sam)
+        set sample_id, file("${sample_id}.host.sorted.bam") into (host_bam)
 
     """
     bwa mem ${host} ${forward} ${reverse} -t ${threads} > ${sample_id}.host.sam
+    samtools view -bS ${sample_id}.host.sam | samtools sort -@ ${threads} -o ${sample_id}.host.sorted.bam
+    rm *.sam
     """
 }
 
@@ -174,16 +176,15 @@ process RemoveHostDNA {
         }
 
     input:
-        set sample_id, file(sam) from host_sam
+        set sample_id, file(bam) from host_bam
 
     output:
         set sample_id, file("${sample_id}.host.sorted.removed.bam") into (non_host_bam)
         file("${sample_id}.samtools.idxstats") into (idxstats_logs)
 
     """
-    samtools view -bS ${sam} | samtools sort -@ ${threads} -o ${sample_id}.host.sorted.bam
-    samtools index ${sample_id}.host.sorted.bam && samtools idxstats ${sample_id}.host.sorted.bam > ${sample_id}.samtools.idxstats
-    samtools view -h -f 4 -b ${sample_id}.host.sorted.bam -o ${sample_id}.host.sorted.removed.bam
+    samtools index ${bam} && samtools idxstats ${bam} > ${sample_id}.samtools.idxstats
+    samtools view -h -f 4 -b ${bam} -o ${sample_id}.host.sorted.removed.bam
     """
 }
 
@@ -208,26 +209,6 @@ process HostRemovalStats {
     """
 }
 
-process BAMToFASTQ {
-    tag { sample_id }
-
-    publishDir "${params.output}/BAMToFASTQ", mode: "copy"
-
-    input:
-        set sample_id, file(bam) from non_host_bam
-
-    output:
-        set sample_id, file("${sample_id}.non.host.R1.fastq.gz"), file("${sample_id}.non.host.R2.fastq.gz") into (non_host_fastq_count,non_host_fastq_assembly)
-
-    """
-    bedtools  \
-       bamtofastq \
-      -i ${bam} \
-      -fq ${sample_id}.non.host.R1.fastq \
-      -fq2 ${sample_id}.non.host.R2.fastq
-    gzip *.fastq
-    """
-}
 
 if( !params.amr_index ) {
     process BuildAMRIndex {
@@ -245,6 +226,160 @@ if( !params.amr_index ) {
     }
 }
 
+process BAMToFASTQ {
+    tag { sample_id }
+
+    publishDir "${params.output}/BAMToFASTQ", mode: "copy"
+
+    input:
+        set sample_id, file(bam) from non_host_bam
+
+    output:
+        set sample_id, file("${sample_id}.non.host.R1.fastq.gz"), file("${sample_id}.non.host.R2.fastq.gz") into (non_host_fastq_dedup,non_host_fastq_assembly,non_host_fastq_megares,non_host_fastq_nodedup)
+
+    """
+    bedtools  \
+       bamtofastq \
+      -i ${bam} \
+      -fq ${sample_id}.non.host.R1.fastq \
+      -fq2 ${sample_id}.non.host.R2.fastq
+    gzip *.fastq
+    """
+}
+
+/* From here on you have the non-host reads for actual analysis */
+
+/*
+-
+--
+---
+---- nonhost reads for megares
+---
+--
+-
+*/
+
+
+process AlignToAMR {
+     tag { sample_id }
+
+     publishDir "${params.output}/AlignToAMR", mode: "copy"
+
+     input:
+         set sample_id, file(forward), file(reverse) from non_host_fastq_megares
+         file index from amr_index.first()
+         file amr
+
+     output:
+         set sample_id, file("${sample_id}.amr.alignment.sam") into (megares_resistome_sam, megares_rarefaction_sam, megares_snp_sam , megares_snp_sam_confirm)
+         set sample_id, file("${sample_id}.amr.alignment.dedup.sam") into (megares_dedup_resistome_sam)
+
+     """
+     bwa mem ${amr} ${forward} ${reverse} -t ${threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.amr.alignment.sam
+     samtools view -S -b ${sample_id}.amr.alignment.sam > ${sample_id}.amr.alignment.bam
+     samtools sort -n ${sample_id}.amr.alignment.bam -o ${sample_id}.amr.alignment.sorted.bam
+     samtools fixmate ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam
+     samtools sort ${sample_id}.amr.alignment.sorted.fix.bam -o ${sample_id}.amr.alignment.sorted.fix.sorted.bam
+     samtools rmdup -S ${sample_id}.amr.alignment.sorted.fix.sorted.bam ${sample_id}.amr.alignment.dedup.bam
+     samtools view -h -o ${sample_id}.amr.alignment.dedup.sam ${sample_id}.amr.alignment.dedup.bam
+     rm ${sample_id}.amr.alignment.bam
+     rm ${sample_id}.amr.alignment.sorted*.bam
+     """
+}
+
+process RunResistome {
+    tag { sample_id }
+
+    publishDir "${params.output}/RunResistome", mode: "copy"
+
+    input:
+        set sample_id, file(sam) from megares_resistome_sam
+        file annotation
+        file amr
+
+    output:
+        file("${sample_id}.gene.tsv") into (megares_resistome_counts, SNP_confirm_long)
+
+    """
+    resistome -ref_fp ${amr} \
+      -annot_fp ${annotation} \
+      -sam_fp ${sam} \
+      -gene_fp ${sample_id}.gene.tsv \
+      -group_fp ${sample_id}.group.tsv \
+      -class_fp ${sample_id}.class.tsv \
+      -mech_fp ${sample_id}.mechanism.tsv \
+      -t ${threshold}
+    """
+}
+
+megares_resistome_counts.toSortedList().set { megares_amr_l_to_w }
+
+process AMRLongToWide {
+    tag { }
+
+    publishDir "${params.output}/AMRLongToWide", mode: "copy"
+
+    input:
+        file(resistomes) from megares_amr_l_to_w
+
+    output:
+        file("AMR_analytic_matrix.csv") into amr_master_matrix
+
+    """
+    mkdir ret
+    python3 $baseDir/bin/amr_long_to_wide.py -i ${resistomes} -o ret
+    mv ret/AMR_analytic_matrix.csv .
+    """
+}
+
+
+/* samtools rmdup test */
+process SamDedupRunResistome {
+    tag { sample_id }
+
+    publishDir "${params.output}/SamDedupRunResistome", mode: "copy"
+
+    input:
+        set sample_id, file(sam) from megares_dedup_resistome_sam
+        file annotation
+        file amr
+
+    output:
+        file("${sample_id}.gene.tsv") into (megares_dedup_resistome_counts)
+
+    """
+    resistome -ref_fp ${amr} \
+      -annot_fp ${annotation} \
+      -sam_fp ${sam} \
+      -gene_fp ${sample_id}.gene.tsv \
+      -group_fp ${sample_id}.group.tsv \
+      -class_fp ${sample_id}.class.tsv \
+      -mech_fp ${sample_id}.mechanism.tsv \
+      -t ${threshold}
+    """
+}
+
+megares_dedup_resistome_counts.toSortedList().set { megares_dedup_amr_l_to_w }
+
+process SamDedupAMRLongToWide {
+    tag { }
+
+    publishDir "${params.output}/SamDedup_AMRLongToWide", mode: "copy"
+
+    input:
+        file(resistomes) from megares_dedup_amr_l_to_w
+
+    output:
+        file("SamDedup_AMR_analytic_matrix.csv") into megares_dedup_amr_master_matrix
+
+    """
+    mkdir ret
+    python3 $baseDir/bin/amr_long_to_wide.py -i ${resistomes} -o ret
+    mv ret/AMR_analytic_matrix.csv SamDedup_AMR_analytic_matrix.csv
+    """
+}
+
+
 process AssembleReads {
     tag { sample_id }
 
@@ -254,7 +389,7 @@ process AssembleReads {
         set sample_id, file(forward), file(reverse) from non_host_fastq_assembly
 
     output:
-        set sample_id, file("${sample_id}.contigs.fasta") into (idba_assemblies,sample_contig)
+        set sample_id, file("${sample_id}.contigs.fasta") into (idba_assemblies,idba_assemblies_dedup,sample_contig)
 
     script:
     """
@@ -278,34 +413,30 @@ process HMM_amr {
         file hmm_group3
 
     output:
-        set sample_id, file("${sample_id}.master.scan") into (hmm_scan)
+        set sample_id, file("${sample_id}.master.scan") into (hmm_scan_dedup, hmm_scan, samtools_dedup_hmm_scan)
 
     script:
     """
-    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g1.tblout.scan $baseDir/containers/data/HMM/${hmm_group1} ${contig}
-    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g2.tblout.scan $baseDir/containers/data/HMM/${hmm_group2} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 10 --tblout ${sample_id}.g1.tblout.scan $baseDir/containers/data/HMM/${hmm_group1} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 10 --tblout ${sample_id}.g2.tblout.scan $baseDir/containers/data/HMM/${hmm_group2} ${contig}
     tail -n +2 ${sample_id}.g2.tblout.scan | head -n -10 > ${sample_id}.g2.scan
-    nhmmer --dna --notextw --cpu ${threads} -E 0.01 --tblout ${sample_id}.g3.tblout.scan $baseDir/containers/data/HMM/${hmm_group3} ${contig}
+    nhmmer --dna --notextw --cpu ${threads} -E 10 --tblout ${sample_id}.g3.tblout.scan $baseDir/containers/data/HMM/${hmm_group3} ${contig}
     tail -n +2 ${sample_id}.g3.tblout.scan | head -n -10 > ${sample_id}.g3.scan
     cat ${sample_id}.g1.tblout.scan ${sample_id}.g2.scan ${sample_id}.g3.scan > ${sample_id}.master.scan
     """
 }
 
-process DedupReads {
-    tag { sample_id }
 
-    publishDir "${params.output}/DedupReads", mode: "copy"
 
-    input:
-        set sample_id, file(forward), file(reverse) from non_host_fastq_count
-
-    output:
-        set sample_id, file("${sample_id}.dd.R1.fastq"), file("${sample_id}.dd.R2.fastq") into (dedup_reads)
-
-    """
-    ${CLUMPIFY} in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t deletetemp=t
-    """
-}
+/*
+-
+--
+---
+---- nonhost reads for HMM counting without deduplication
+---
+--
+-
+*/
 
 
 process AlignToContigs {
@@ -314,18 +445,30 @@ process AlignToContigs {
      publishDir "${params.output}/AlignToContigs", mode: "copy"
 
      input:
-         set sample_id, file(forward), file(reverse) from dedup_reads
+         set sample_id, file(forward), file(reverse) from non_host_fastq_nodedup
          set sample_id, file(contig) from idba_assemblies
          file amr
 
      output:
          set sample_id, file("${sample_id}.contig.alignment.sam") into (contig_sam)
+         set sample_id, file("${sample_id}.contig.alignment.dedup.sam") into (samtools_dedup_contig_sam)
+
 
      """
      bwa index ${contig}
      bwa mem ${contig} ${forward} ${reverse} -t ${threads} > ${sample_id}.contig.alignment.sam
+     samtools view -S -b ${sample_id}.contig.alignment.sam > ${sample_id}.contig.alignment.bam
+     samtools sort -n ${sample_id}.contig.alignment.bam -o ${sample_id}.contig.alignment.sorted.bam
+     samtools fixmate ${sample_id}.contig.alignment.sorted.bam ${sample_id}.contig.alignment.sorted.fix.bam
+     samtools sort ${sample_id}.contig.alignment.sorted.fix.bam -o ${sample_id}.contig.alignment.sorted.fix.sorted.bam
+     samtools rmdup -S ${sample_id}.contig.alignment.sorted.fix.sorted.bam ${sample_id}.contig.alignment.dedup.bam
+     samtools view -h -o ${sample_id}.contig.alignment.dedup.sam ${sample_id}.contig.alignment.dedup.bam
+     rm ${sample_id}.contig.alignment.bam
+     rm ${sample_id}.contig.alignment.sorted*.bam
+
      """
 }
+
 
 process HMMcontig_count {
   tag { sample_id }
@@ -352,22 +495,210 @@ process HMMcontig_count {
   """
   cat ${sam} |$baseDir/containers/data/HMM/${hmm_analysis_script} $baseDir/containers/data/HMM/${hmm_annotation} ${scan} $baseDir/containers/data/HMM/${hmm_snp_annotation} ${sample_id}.hmm
   """
-
 }
 
-process AlignSNPToAMR {
+hmm_counts.toSortedList().set { hmm_amr_l_to_w }
+
+process HMMAMRLongToWide {
+    tag { }
+
+    publishDir "${params.output}/NonSNP_HMM_AMRLongToWide", mode: "copy"
+
+    input:
+        file(hmm_counts) from hmm_amr_l_to_w
+
+    output:
+        file("NonSNP_HMM_AMR_analytic_matrix.csv") into hmm_amr_master_matrix
+
+    """
+    mkdir ret
+    python3 $baseDir/bin/amr_long_to_wide.py -i ${hmm_counts} -o ret
+    mv ret/AMR_analytic_matrix.csv NonSNP_HMM_AMR_analytic_matrix.csv
+    """
+}
+
+
+
+
+
+/*
+-
+--
+---
+----Deduped reads with samtools aligned to contigs for HMM counting
+---
+--
+-
+*/
+
+
+
+process Samtools_dedup_HMMcontig_count {
+  tag { sample_id }
+
+  publishDir "${params.output}/Samtools_dedup_HMM_counts", mode: "copy",
+      saveAs: { filename ->
+          if(filename.indexOf("group_counts.tsv") > 0) "Counts/$filename"
+          else if(filename.indexOf(".hmm.SNP.fastq") > 0) "SNP_reads/$filename"
+	  else if(filename.indexOf(".SNP.stats.tsv") > 0) "SNP_stats/$filename"
+          else {}
+      }
+  input:
+      set sample_id, file(sam) from samtools_dedup_contig_sam
+      set sample_id, file(scan) from samtools_dedup_hmm_scan
+
+      file hmm_analysis_script
+      file hmm_snp_annotation
+      file hmm_annotation
+
+  output:
+      set sample_id, file("${sample_id}.hmm.group_counts.tsv") into (samtools_dedup_hmm_counts)
+      set sample_id, file("${sample_id}.hmm.SNP.fastq") into (samtools_dedup_snp_reads, samtools_dedup_snp_reads_realign)
+
+  """
+  cat ${sam} |$baseDir/containers/data/HMM/${hmm_analysis_script} $baseDir/containers/data/HMM/${hmm_annotation} ${scan} $baseDir/containers/data/HMM/${hmm_snp_annotation} ${sample_id}.hmm
+  """
+}
+
+samtools_dedup_hmm_counts.toSortedList().set { samtools_dedup_hmm_amr_l_to_w }
+
+process Samtools_dedup_HMMAMRLongToWide {
+    tag { }
+
+    publishDir "${params.output}/Samtools_dedup_HMM_AMRLongToWide", mode: "copy"
+
+    input:
+        file(hmm_counts) from samtools_dedup_hmm_amr_l_to_w
+
+    output:
+        file("Samtools_dedup_HMM_AMR_analytic_matrix.csv") into samtools_dedup_hmm_amr_master_matrix
+
+    """
+    mkdir ret
+    python3 $baseDir/bin/amr_long_to_wide.py -i ${hmm_counts} -o ret
+    mv ret/AMR_analytic_matrix.csv Samtools_dedup_HMM_AMR_analytic_matrix.csv
+    """
+}
+
+
+
+
+/*
+-
+--
+---
+----Deduped reads with CLUMPIFY for HMM counting
+---
+--
+-
+*/
+
+
+process DedupReads {
+    tag { sample_id }
+
+    publishDir "${params.output}/DedupReads", mode: "copy"
+
+    input:
+        set sample_id, file(forward), file(reverse) from non_host_fastq_dedup
+
+    output:
+        set sample_id, file("${sample_id}.dd.R1.fastq"), file("${sample_id}.dd.R2.fastq") into (dedup_reads,dedup_reads_megares)
+
+    """
+    ${CLUMPIFY} in1=${forward} in2=${reverse} out1=${sample_id}.dd.R1.fastq out2=${sample_id}.dd.R2.fastq dedupe=t addcount=t deletetemp=t minid=1.0
+    """
+}
+
+
+process AlignDedupedToContigs {
      tag { sample_id }
 
-     publishDir "${params.output}/SNPAlignToAMR", mode: "copy"
+     publishDir "${params.output}/DedupAlignToContigs", mode: "copy"
 
      input:
-         set sample_id, file(forward) from snp_reads
+         set sample_id, file(forward), file(reverse) from dedup_reads
+         set sample_id, file(contig) from idba_assemblies_dedup
+         file amr
+
+     output:
+         set sample_id, file("${sample_id}.contig.alignment.sam") into (dedup_contig_sam)
+
+     """
+     bwa index ${contig}
+     bwa mem ${contig} ${forward} ${reverse} -t ${threads} > ${sample_id}.contig.alignment.sam
+     """
+}
+
+process DedupHMMcontig_count {
+  tag { sample_id }
+
+  publishDir "${params.output}/DedupHMM_counts", mode: "copy",
+      saveAs: { filename ->
+          if(filename.indexOf("group_counts.tsv") > 0) "Counts/$filename"
+          else if(filename.indexOf(".hmm.SNP.fastq") > 0) "SNP_reads/$filename"
+	        else if(filename.indexOf(".SNP.stats.tsv") > 0) "SNP_stats/$filename"
+          else {}
+      }
+  input:
+      set sample_id, file(sam) from dedup_contig_sam
+      set sample_id, file(scan) from hmm_scan_dedup
+      file hmm_analysis_script
+      file hmm_snp_annotation
+      file hmm_annotation
+
+  output:
+      set sample_id, file("${sample_id}.hmm.group_counts.tsv") into (dedup_hmm_counts)
+      set sample_id, file("${sample_id}.hmm.SNP.fastq") into (dedup_snp_reads)
+
+  """
+  cat ${sam} |$baseDir/containers/data/HMM/${hmm_analysis_script} $baseDir/containers/data/HMM/${hmm_annotation} ${scan} $baseDir/containers/data/HMM/${hmm_snp_annotation} ${sample_id}.hmm
+  """
+}
+
+dedup_hmm_counts.toSortedList().set { dedup_hmm_amr_l_to_w }
+
+process DedupNonSNPAMRLongToWide {
+    tag { }
+
+    publishDir "${params.output}/Dedup_NonSNP_HMM_AMRLongToWide", mode: "copy"
+
+    input:
+        file(hmm_counts) from dedup_hmm_amr_l_to_w
+
+    output:
+        file("Dedup_NonSNP_HMM_AMR_analytic_matrix.csv") into dedup_amr_master_matrix
+
+    """
+    mkdir ret
+    python3 $baseDir/bin/amr_long_to_wide.py -i ${hmm_counts} -o ret
+    mv ret/AMR_analytic_matrix.csv Dedup_NonSNP_HMM_AMR_analytic_matrix.csv
+    """
+}
+/*
+-
+--
+---
+---- bbmap dedup reads for megares alignment
+---
+--
+-
+*/
+
+
+process BBmapDedupAlignToAMR {
+     tag { sample_id }
+
+     publishDir "${params.output}/BBmapDedupAlignToAMR", mode: "copy"
+
+     input:
+         set sample_id, file(forward) from dedup_reads_megares
          file index from amr_index.first()
          file amr
 
      output:
-         set sample_id, file("${sample_id}.amr.alignment.sam") into (resistome_sam, rarefaction_sam, snp_sam , snp_sam_confirm)
-         set sample_id, file("${sample_id}.amr.alignment.dedup.bam") into (resistome_bam)
+         set sample_id, file("${sample_id}.amr.alignment.sam") into (bbmap_dedup_megares_resistome_sam, bbmap_dedup_megares_rarefaction_sam, bbmap_dedup_megares_snp_sam , bbmap_dedup_megares_snp_sam_confirm)
+         set sample_id, file("${sample_id}.amr.alignment.dedup.sam") into (bbmap_dedup_megares_dedup_resistome_sam)
 
      """
      bwa mem ${amr} ${forward} -t ${threads} -R '@RG\\tID:${sample_id}\\tSM:${sample_id}' > ${sample_id}.amr.alignment.sam
@@ -376,23 +707,24 @@ process AlignSNPToAMR {
      samtools fixmate ${sample_id}.amr.alignment.sorted.bam ${sample_id}.amr.alignment.sorted.fix.bam
      samtools sort ${sample_id}.amr.alignment.sorted.fix.bam -o ${sample_id}.amr.alignment.sorted.fix.sorted.bam
      samtools rmdup -S ${sample_id}.amr.alignment.sorted.fix.sorted.bam ${sample_id}.amr.alignment.dedup.bam
+     samtools view -h -o ${sample_id}.amr.alignment.dedup.sam ${sample_id}.amr.alignment.dedup.bam
      rm ${sample_id}.amr.alignment.bam
      rm ${sample_id}.amr.alignment.sorted*.bam
      """
 }
 
-process RunResistome {
+process BBmapDedupRunResistome {
     tag { sample_id }
 
-    publishDir "${params.output}/SNPRunResistome", mode: "copy"
+    publishDir "${params.output}/BBmapDedupRunResistome", mode: "copy"
 
     input:
-        set sample_id, file(sam) from resistome_sam
+        set sample_id, file(sam) from bbmap_dedup_megares_resistome_sam
         file annotation
         file amr
 
     output:
-        file("${sample_id}.gene.tsv") into (resistome, SNP_confirm_long)
+        file("${sample_id}.gene.tsv") into (bbmap_dedup_megares_resistome_counts, bbmap_SNP_confirm_long)
 
     """
     resistome -ref_fp ${amr} \
@@ -406,26 +738,25 @@ process RunResistome {
     """
 }
 
-hmm_counts.toSortedList().set { amr_l_to_w }
+bbmap_dedup_megares_resistome_counts.toSortedList().set { bbmap_megares_amr_l_to_w }
 
-process AMRLongToWide {
+process BBmapDedupAMRLongToWide {
     tag { }
 
-    publishDir "${params.output}/NonSNPAMRLongToWide", mode: "copy"
+    publishDir "${params.output}/BBmapDedupAMRLongToWide", mode: "copy"
 
     input:
-        file(hmm_counts) from amr_l_to_w
+        file(resistomes) from bbmap_megares_amr_l_to_w
 
     output:
-        file("AMR_analytic_matrix.csv") into amr_master_matrix
+        file("BBmap_dedup_AMR_analytic_matrix.csv") into bbmap_dedup_amr_master_matrix
 
     """
     mkdir ret
-    python3 $baseDir/bin/amr_long_to_wide.py -i ${hmm_counts} -o ret
-    mv ret/AMR_analytic_matrix.csv .
+    python3 $baseDir/bin/amr_long_to_wide.py -i ${resistomes} -o ret
+    mv ret/AMR_analytic_matrix.csv ./BBmap_dedup_AMR_analytic_matrix.csv
     """
 }
-
 
 
 
@@ -522,3 +853,4 @@ def help() {
     println ""
     return 1
 }
+
